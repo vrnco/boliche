@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚙️ Admin — Boliche</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14px;}
+.wrap{max-width:1080px;margin:0 auto;padding:1.5rem 1rem;}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:12px;}
+.logo{font-size:18px;font-weight:700;color:#fff;}
+.tabs{display:flex;background:#fff;border-radius:10px;padding:4px;gap:3px;margin-bottom:1.25rem;border:1px solid #e0e0e0;flex-wrap:wrap;}
+.tab{flex:1;min-width:80px;padding:8px 4px;font-size:12px;font-weight:600;border:none;background:transparent;color:#888;cursor:pointer;border-radius:7px;transition:all .15s;}
+.tab.active{background:#1a1a1a;color:#fff;}
+.card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px;}
+.sec{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+input,select,textarea{height:34px;padding:0 8px;border:1px solid #ccc;border-radius:7px;font-size:13px;background:#fff;color:#1a1a1a;}
+textarea{height:auto;padding:8px;}
+input:focus,select:focus,textarea:focus{outline:2px solid #1a1a1a;}
+input[type=number]{width:70px;text-align:center;}
+input[type=file]{height:auto;padding:6px 8px;}
+.btn{height:34px;padding:0 14px;border:1px solid #ccc;border-radius:7px;font-size:13px;font-weight:600;background:#fff;color:#1a1a1a;cursor:pointer;}
+.btn:hover{background:#f5f5f5;}
+.btn-p{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.btn-p:hover{background:#333;}
+.btn-g{background:#219a52;color:#fff;border-color:#219a52;}
+.btn-g:hover{background:#1a7a3c;}
+.btn-sm{height:28px;padding:0 10px;font-size:11px;}
+.btn-d{color:#c0392b;border-color:#e88;}
+.btn-d:hover{background:#fff5f5;}
+.btn-warn{background:#e67e22;color:#fff;border-color:#e67e22;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:11px;font-weight:700;color:#aaa;text-align:left;padding:9px 10px;border-bottom:2px solid #f0f0f0;background:#fafafa;white-space:nowrap;}
+.tbl td{padding:9px 10px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+.tbl tbody tr:hover td{background:#fafafa;}
+.tbl tbody tr:last-child td{border-bottom:none;}
+.ok{font-size:12px;color:#219a52;margin-top:8px;font-weight:600;}
+.err{font-size:12px;color:#c0392b;margin-top:8px;font-weight:600;}
+.warn{font-size:12px;color:#e67e22;margin-top:8px;font-weight:600;}
+.empty{text-align:center;padding:2rem;color:#bbb;font-size:13px;}
+.loading{text-align:center;padding:2rem;color:#999;font-size:13px;}
+.info-box{background:#e8f4fd;border:1px solid #90caf9;border-radius:10px;padding:.8rem 1rem;margin-bottom:12px;font-size:13px;line-height:1.7;}
+.gh{display:grid;grid-template-columns:155px 65px 65px 65px 72px 72px 1fr;gap:5px;align-items:center;}
+.gr{display:grid;grid-template-columns:155px 65px 65px 65px 72px 72px 1fr;gap:5px;align-items:center;padding:5px 0;border-bottom:1px solid #f5f5f5;}
+.gr:last-child{border-bottom:none;}
+.med-val{text-align:center;font-size:13px;font-weight:700;color:#555;}
+.lbest{display:inline-block;background:#fff8e1;color:#7d4e00;border:1px solid #ffe082;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;}
+.late-badge{display:inline-block;background:#f3e5f5;color:#6a1b9a;border-radius:20px;padding:1px 6px;font-size:10px;font-weight:700;margin-right:3px;}
+.fem-badge{display:inline-block;background:#fce4ec;color:#ad1457;border-radius:20px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:3px;}
+.hcp-tag{font-size:9px;color:#ad1457;font-weight:700;vertical-align:super;}
+.pts-edit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:7px;}
+.pts-edit-row{display:flex;align-items:center;gap:8px;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:7px 10px;}
+.pts-edit-row label{font-size:13px;font-weight:600;flex:1;}
+.av{width:36px;height:36px;border-radius:50%;object-fit:cover;}
+.av-ini{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+.total-dia{background:#f0f7ff;border:1px solid #b3d4f5;border-radius:8px;padding:7px 12px;font-size:13px;margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;}
+.total-dia b{color:#1a5fa8;}
+.chip{display:inline-block;background:#f0f0f0;border-radius:20px;padding:2px 9px;font-size:11px;margin:2px;line-height:1.6;}
+.chip.best{background:#fff8e1;color:#7d4e00;border:1px solid #ffe082;font-weight:700;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;display:none;}
+/* torneio */
+.bracket{display:flex;gap:20px;overflow-x:auto;padding-bottom:8px;}
+.bracket-round{display:flex;flex-direction:column;gap:8px;min-width:190px;}
+.bracket-round-title{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;text-align:center;margin-bottom:4px;}
+.match-card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;}
+.match-player{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:12px;cursor:pointer;transition:background .1s;}
+.match-player.winner{background:#e8f5e9;font-weight:700;}
+.match-player.loser{opacity:.5;}
+.match-sep{height:1px;background:#f0f0f0;}
+.score-input{width:55px;height:28px;text-align:center;font-size:13px;font-weight:700;}
+.trn-atleta-pill{display:inline-flex;align-items:center;gap:4px;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:20px;padding:3px 10px;font-size:12px;cursor:pointer;margin:3px;user-select:none;}
+.trn-atleta-pill.selected{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.trn-campeao{font-size:20px;font-weight:700;color:#c9960c;}
+@media(max-width:680px){
+  .gh,.gr{grid-template-columns:115px 58px 58px 58px 65px auto;}
+  input[type=number]{width:58px;}
+  .tab{font-size:10px;padding:6px 2px;min-width:60px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+  <div>
+    <div class="logo">⚙️ Admin — Ranking Boliche</div>
+    <div style="font-size:11px;color:#aaa;margin-top:2px;" id="admin-email-label"></div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <a href="index.html" class="btn btn-sm" style="text-decoration:none;">👁 Ver site</a>
+    <button class="btn btn-sm btn-d" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="tab('lancar')">📝 Lançar</button>
+  <button class="tab" onclick="tab('historico')">📅 Histórico</button>
+  <button class="tab" onclick="tab('atletas')">👤 Atletas</button>
+  <button class="tab" onclick="tab('torneio')">🏆 Torneio</button>
+  <button class="tab" onclick="tab('ptsextra')">🎖️ Pts Extra</button>
+  <button class="tab" onclick="tab('config')">⚙️ Config</button>
+</div>
+
+<!-- LANÇAR -->
+<div id="t-lancar">
+
+  <!-- IMPORTAR EXCEL -->
+  <div class="card" style="border:2px dashed #b3d4f5;background:#f0f7ff;">
+    <p class="sec" style="color:#1a5fa8;">📊 Importar Excel (opcional)</p>
+    <p style="font-size:13px;color:#555;margin-bottom:10px;line-height:1.7;">
+      Suba sua planilha no mesmo formato que você usa — com colunas <strong>JOGADOR, PISTA, GAME 1, GAME 2, GAME 3</strong> por rodada.<br>
+      Selecione qual semana importar e os campos serão preenchidos automaticamente.
+    </p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <input type="file" id="excel-input" accept=".xlsx,.xls" style="font-size:13px;" onchange="lerExcel(this)">
+    </div>
+    <div id="excel-semanas" style="margin-top:10px;display:none;">
+      <div style="font-size:11px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Selecione a semana para importar:</div>
+      <div id="excel-semanas-list" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+    <div id="excel-msg" style="font-size:12px;margin-top:8px;"></div>
+  </div>
+
+  <div class="info-box">
+    <strong>📌 Regras:</strong> Até terça = pontuação normal. Após a terça = ganha pontos da posição sem prejudicar quem jogou no prazo.<br>
+    <strong>♀️ Handicap:</strong> +<span id="hcp-info">20</span> pinos por game para jogadoras femininas.<br>
+    <strong>🏆 Melhor linha:</strong> desempate em cascata pelo 2º e 3º game.
+  </div>
+  <div class="card">
+    <p class="sec">Identificação</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div><div style="font-size:11px;color:#aaa;margin-bottom:3px;">Semana</div>
+        <input type="text" id="sn" style="width:160px;" placeholder="Ex: Semana 8"></div>
+      <div><div style="font-size:11px;color:#aaa;margin-bottom:3px;">Data (terça do prazo)</div>
+        <input type="date" id="sd" style="width:150px;"></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="sec">✅ No prazo</p>
+    <div class="gh" style="padding-bottom:7px;border-bottom:2px solid #f0f0f0;margin-bottom:7px;">
+      <span style="font-size:10px;font-weight:700;color:#bbb;">ATLETA</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G1</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G2</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G3</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">TOTAL</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">MÉDIA</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">MELHOR LINHA</span>
+    </div>
+    <div id="grs-prazo"></div>
+  </div>
+  <div class="card" style="border-color:#ce93d8;">
+    <p class="sec" style="color:#8e44ad;">🕐 Fora do prazo</p>
+    <div class="gh" style="padding-bottom:7px;border-bottom:2px solid #f5f0fa;margin-bottom:7px;">
+      <span style="font-size:10px;font-weight:700;color:#bbb;">ATLETA</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G1</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G2</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G3</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">TOTAL</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">MÉDIA</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">MELHOR LINHA</span>
+    </div>
+    <div id="grs-fora"></div>
+  </div>
+  <div class="total-dia" id="total-dia-lancar"></div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-p" onclick="salvar()">✓ Salvar semana</button>
+    <button class="btn" onclick="limpar()">✕ Limpar</button>
+  </div>
+  <div id="lm"></div>
+</div>
+
+<!-- HISTÓRICO -->
+<div id="t-historico" style="display:none;"><div id="hist-list"></div></div>
+
+<!-- ATLETAS -->
+<div id="t-atletas" style="display:none;">
+  <div class="card">
+    <p class="sec">Adicionar atleta</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <input type="text" id="novo-nome" placeholder="Nome do atleta" style="width:180px;">
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="novo-fem" style="width:16px;height:16px;"> Feminino (+<span id="hcp-label2">20</span>)
+      </label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="novo-ext" style="width:16px;height:16px;"> Externo (convidado)
+      </label>
+      <button class="btn btn-p" onclick="adicionarAtleta()">+ Adicionar</button>
+    </div>
+    <div id="msg-atleta" style="font-size:12px;margin-top:6px;"></div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table class="tbl"><thead><tr>
+      <th>Foto</th><th>Nome</th><th>Sexo</th><th>Tipo</th><th>Ativo</th><th>Ações</th>
+    </tr></thead><tbody id="atletas-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- TORNEIO -->
+<div id="t-torneio" style="display:none;">
+  <div id="trn-main"></div>
+</div>
+
+<!-- PTS EXTRA -->
+<div id="t-ptsextra" style="display:none;">
+  <div class="card">
+    <p class="sec">Lançar torneio extra</p>
+    <p style="font-size:13px;color:#555;line-height:1.7;margin-bottom:12px;">
+      Torneios extras que valem pontos no ranking. Informe o nome, data e selecione os 3 primeiros colocados do plantel.<br>
+      <strong>1º = 200pts &nbsp;·&nbsp; 2º = 180pts &nbsp;·&nbsp; 3º = 160pts</strong>
+    </p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+      <div><div style="font-size:11px;color:#aaa;margin-bottom:3px;">Nome do torneio</div>
+        <input type="text" id="pte-nome" placeholder="Ex: Torneio de Páscoa" style="width:220px;"></div>
+      <div><div style="font-size:11px;color:#aaa;margin-bottom:3px;">Data</div>
+        <input type="date" id="pte-data" style="width:150px;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;" id="pte-podio">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#c9960c;margin-bottom:6px;">🥇 1º lugar — 200 pts</div>
+        <select id="pte-1" style="width:100%;height:36px;font-size:13px;">
+          <option value="">Selecionar atleta</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">🥈 2º lugar — 180 pts</div>
+        <select id="pte-2" style="width:100%;height:36px;font-size:13px;">
+          <option value="">Selecionar atleta</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#b5651d;margin-bottom:6px;">🥉 3º lugar — 160 pts</div>
+        <select id="pte-3" style="width:100%;height:36px;font-size:13px;">
+          <option value="">Selecionar atleta</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-p" onclick="salvarPtsExtra()">✓ Salvar torneio extra</button>
+    <div id="pte-msg" style="font-size:12px;margin-top:8px;"></div>
+  </div>
+
+  <div style="margin-top:4px;">
+    <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:10px;">📜 Histórico de torneios extras</div>
+    <div id="pte-hist"></div>
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div id="t-config" style="display:none;">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <p class="sec" style="margin:0;">Tabela de pontos por colocação</p>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm btn-p" onclick="salvarPontos()">✓ Salvar</button>
+        <button class="btn btn-sm" onclick="resetarPontos()">↺ Padrão</button>
+      </div>
+    </div>
+    <div id="pts-edit" class="pts-edit-grid"></div>
+    <div id="pts-msg"></div>
+  </div>
+  <div class="card">
+    <p class="sec">Bônus melhor linha</p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <label style="font-size:13px;">Pontos extras:</label>
+      <input type="number" id="bonus-val" min="0" max="100" style="width:80px;">
+      <label style="font-size:13px;margin-left:10px;">Handicap feminino (pinos/game):</label>
+      <input type="number" id="hcp-val" min="0" max="100" style="width:80px;">
+      <button class="btn btn-sm btn-p" onclick="salvarConfig()">✓ Salvar</button>
+    </div>
+    <div id="cfg-msg" style="font-size:12px;margin-top:6px;"></div>
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── SUPABASE ───────────────────────────────────────────────────────────────
+const SB_URL = 'https://hnjtrtelgsoavoufpwdv.supabase.co';
+const SB_KEY = 'sb_publishable_gZa2LT5DhDqXzY2inrILNg_uQogwYtK';
+let AUTH_TOKEN = localStorage.getItem('sb_token')||'';
+
+function headers(){
+  return{'Content-Type':'application/json','apikey':SB_KEY,
+    'Authorization':'Bearer '+(AUTH_TOKEN||SB_KEY),'Prefer':'return=representation'};
+}
+
+async function sbGet(path,params=''){
+  const r=await fetch(SB_URL+'/rest/v1/'+path+(params?'?'+params:''),{headers:headers()});
+  if(r.status===401){sair();return[];}
+  return r.json();
+}
+async function sbPost(path,body){
+  const r=await fetch(SB_URL+'/rest/v1/'+path,{method:'POST',headers:headers(),body:JSON.stringify(body)});
+  if(r.status===401){sair();return null;}
+  return r.json();
+}
+async function sbPatch(path,params,body){
+  const r=await fetch(SB_URL+'/rest/v1/'+path+'?'+params,{method:'PATCH',headers:headers(),body:JSON.stringify(body)});
+  if(r.status===401){sair();return null;}
+  return r.json();
+}
+async function sbDelete(path,params){
+  const r=await fetch(SB_URL+'/rest/v1/'+path+'?'+params,{method:'DELETE',headers:headers()});
+  if(r.status===401){sair();return;}
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+async function verificarAuth(){
+  if(!AUTH_TOKEN){window.location.href='index.html';return;}
+  try{
+    const r=await fetch(SB_URL+'/auth/v1/user',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+AUTH_TOKEN}});
+    if(r.status!==200){sair();return;}
+    const u=await r.json();
+    document.getElementById('admin-email-label').textContent='Logado como: '+u.email;
+  }catch{sair();}
+}
+function sair(){localStorage.removeItem('sb_token');window.location.href='index.html';}
+
+// ── ESTADO ────────────────────────────────────────────────────────────────
+let atletas=[], rodadas=[], scores=[], cfg={pontos_pos:{},bonus_linha:10,handicap_feminino:20};
+const PP_DEF={1:200,2:180,3:160,4:140,5:130,6:120,7:120,8:110,9:100,10:90,11:80,12:80,13:80,14:70,15:60,16:50,17:40,18:30,19:20,20:20};
+const CL=['#2980b9','#16a085','#e67e22','#8e44ad','#c0392b','#27ae60','#2c3e50','#d35400','#1abc9c','#7f8c8d','#2980b9','#16a085','#e67e22','#8e44ad','#c0392b','#27ae60','#2c3e50','#d35400','#1abc9c','#7f8c8d'];
+
+function ac(n){let h=0;for(let c of n)h=(h*31+c.charCodeAt(0))%CL.length;return CL[h];}
+function ini(n){return n.split(' ').map(w=>w[0]).join('').slice(0,2);}
+function fmtD(d){return d?new Date(d+'T12:00').toLocaleDateString('pt-BR'):'';}
+function isFem(nm){return atletas.find(a=>a.nome===nm)?.feminino||false;}
+const HCP=()=>cfg.handicap_feminino||20;
+const BONUS=()=>cfg.bonus_linha||10;
+const PP=()=>cfg.pontos_pos||{};
+
+function gamesAdj(nm,g1r,g2r,g3r){
+  const h=isFem(nm)?HCP():0;
+  const g1=g1r>0?g1r+h:0,g2=g2r>0?g2r+h:0,g3=g3r>0?g3r+h:0;
+  const vs=[g1,g2,g3].filter(v=>v>0);
+  return{g1,g2,g3,media:vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:0};
+}
+function linhaSorted(d){return[d.g1||0,d.g2||0,d.g3||0].sort((a,b)=>b-a);}
+function cmpLinha(da,db){const la=linhaSorted(da),lb=linhaSorted(db);for(let i=0;i<3;i++){if(la[i]!==lb[i])return la[i]-lb[i];}return 0;}
+function getBonusWinners(adjMap){
+  const en=Object.entries(adjMap).filter(([,d])=>d.media>0);
+  if(!en.length)return new Set();
+  const maxG=Math.max(...en.map(([,d])=>Math.max(d.g1||0,d.g2||0,d.g3||0)));
+  const cands=en.filter(([,d])=>Math.max(d.g1||0,d.g2||0,d.g3||0)===maxG);
+  if(cands.length===1)return new Set([cands[0][0]]);
+  cands.sort((a,b)=>cmpLinha(b[1],a[1]));
+  const win=[];
+  for(const[nm,d]of cands){if(cmpLinha(cands[0][1],d)===0)win.push(nm);else break;}
+  return new Set(win);
+}
+
+async function carregarDados(){
+  let torneiosExtra=[];
+  [atletas,rodadas,scores,torneiosExtra]= await Promise.all([
+    sbGet('atletas','order=nome&ativo=eq.true'),
+    sbGet('rodadas','order=data'),
+    sbGet('scores','order=rodada_id'),
+    sbGet('torneios_extra','order=data'),
+  ]);
+  // Armazenar globalmente para uso no cálculo
+  window._torneiosExtra = torneiosExtra||[];
+  const cfgArr=await sbGet('configuracao','id=eq.1');
+  if(cfgArr[0])cfg=cfgArr[0];
+  document.getElementById('hcp-info').textContent=HCP();
+  document.getElementById('hcp-label2').textContent=HCP();
+  rGames('grs-prazo','p',null);
+  rGames('grs-fora','f',null);
+  rAtletas();
+  rConfig();
+  atualizarTotalDia('p','f');
+  const n=rodadas.length+1;
+  if(!document.getElementById('sn').value)document.getElementById('sn').value='Semana '+n;
+}
+
+// ── FORMULÁRIO DE GAMES ───────────────────────────────────────────────────
+function rGames(cid,pfx,dados){
+  document.getElementById(cid).innerHTML=atletas.map((a,i)=>{
+    const d=dados&&dados[a.nome];
+    const g1raw=d?d.g1||'':'';
+    const g2raw=d?d.g2||'':'';
+    const g3raw=d?d.g3||'':'';
+    const fem=isFem(a.nome)?`<span class="hcp-tag">+${HCP()}</span>`:'';
+    const av=a.foto_url?`<img src="${a.foto_url}" class="av" style="width:24px;height:24px;">`:`<div class="av-ini" style="width:24px;height:24px;background:${ac(a.nome)}20;color:${ac(a.nome)};font-size:8px;">${ini(a.nome)}</div>`;
+    return`<div class="gr" id="${pfx}gr${i}">
+      <div style="display:flex;align-items:center;gap:5px;">${av}<span style="font-size:12px;">${a.nome}${fem}</span></div>
+      <input type="number" id="${pfx}g1${i}" min="0" max="300" placeholder="—" value="${g1raw}" oninput="cm('${pfx}',${i})">
+      <input type="number" id="${pfx}g2${i}" min="0" max="300" placeholder="—" value="${g2raw}" oninput="cm('${pfx}',${i})">
+      <input type="number" id="${pfx}g3${i}" min="0" max="300" placeholder="—" value="${g3raw}" oninput="cm('${pfx}',${i})">
+      <div id="${pfx}tot${i}" style="text-align:center;font-size:13px;font-weight:700;color:#2c3e50;">${d&&d.media>0?d.g1+d.g2+d.g3:'—'}</div>
+      <div id="${pfx}md${i}" class="med-val">${d&&d.media>0?d.media.toFixed(1):'—'}</div>
+      <div id="${pfx}mx${i}" style="text-align:center;font-size:12px;">—</div>
+    </div>`;
+  }).join('');
+  setTimeout(()=>hblPfx(pfx),30);
+}
+
+function cm(p,i){
+  const nm=atletas[i]?.nome; if(!nm)return;
+  const g1r=+document.getElementById(p+'g1'+i).value||0;
+  const g2r=+document.getElementById(p+'g2'+i).value||0;
+  const g3r=+document.getElementById(p+'g3'+i).value||0;
+  const {g1,g2,g3,media}=gamesAdj(nm,g1r,g2r,g3r);
+  const tot=media>0?g1+g2+g3:0;
+  document.getElementById(p+'tot'+i).textContent=tot>0?tot:'—';
+  document.getElementById(p+'md'+i).textContent=media>0?media.toFixed(1):'—';
+  document.getElementById(p+'mx'+i).textContent=media>0?Math.max(g1,g2,g3):'—';
+  hblPfx(p);
+  const outro=p==='p'?'f':p==='f'?'p':p==='ep'?'ef':'ep';
+  hblPfx(outro);
+  atualizarTotalDia(p==='ep'||p==='ef'?'ep':'p', p==='ep'||p==='ef'?'ef':'f');
+}
+
+function hblPfx(pfx){
+  const sc={};
+  const outro=pfx==='p'?'f':pfx==='f'?'p':pfx==='ep'?'ef':'ep';
+  [pfx,outro].forEach(px=>{
+    atletas.forEach((a,i)=>{
+      const g1r=+document.getElementById(px+'g1'+i)?.value||0;
+      const g2r=+document.getElementById(px+'g2'+i)?.value||0;
+      const g3r=+document.getElementById(px+'g3'+i)?.value||0;
+      const {g1,g2,g3,media}=gamesAdj(a.nome,g1r,g2r,g3r);
+      if(media>0&&!sc[a.nome])sc[a.nome]={g1,g2,g3,media};
+    });
+  });
+  const win=getBonusWinners(sc);
+  atletas.forEach((a,i)=>{
+    const g1r=+document.getElementById(pfx+'g1'+i)?.value||0;
+    const g2r=+document.getElementById(pfx+'g2'+i)?.value||0;
+    const g3r=+document.getElementById(pfx+'g3'+i)?.value||0;
+    const {g1,g2,g3,media}=gamesAdj(a.nome,g1r,g2r,g3r);
+    const mx=Math.max(g1,g2,g3);
+    const el=document.getElementById(pfx+'mx'+i);if(!el)return;
+    if(mx>0&&win.has(a.nome))el.innerHTML=`<span class="lbest">🏆 ${mx} +${BONUS()}</span>`;
+    else el.textContent=mx>0?mx:'—';
+  });
+}
+
+function atualizarTotalDia(pfx1,pfx2){
+  let tg=0,ta=0;
+  [pfx1,pfx2].forEach(p=>{
+    atletas.forEach((a,i)=>{
+      const g1r=+document.getElementById(p+'g1'+i)?.value||0;
+      const g2r=+document.getElementById(p+'g2'+i)?.value||0;
+      const g3r=+document.getElementById(p+'g3'+i)?.value||0;
+      const {g1,g2,g3,media}=gamesAdj(a.nome,g1r,g2r,g3r);
+      if(media>0){tg+=g1+g2+g3;ta++;}
+    });
+  });
+  const el=document.getElementById('total-dia-lancar');
+  if(el)el.innerHTML=ta>0?`Total do dia: <b>${tg}</b> pinos &nbsp;|&nbsp; Atletas: <b>${ta}</b> &nbsp;|&nbsp; Média geral: <b>${(tg/ta/3).toFixed(1)}</b>`:'';
+}
+
+function getScoresFromForm(pfx,fp){
+  const sc={};
+  atletas.forEach((a,i)=>{
+    const g1r=+document.getElementById(pfx+'g1'+i)?.value||0;
+    const g2r=+document.getElementById(pfx+'g2'+i)?.value||0;
+    const g3r=+document.getElementById(pfx+'g3'+i)?.value||0;
+    // Calcula media com handicap para verificar se jogou, mas salva games BRUTOS
+    const adj=gamesAdj(a.nome,g1r,g2r,g3r);
+    if(adj.media>0)sc[a.nome]={g1:g1r,g2:g2r,g3:g3r,media:adj.media,fp};
+  });
+  return sc;
+}
+
+// ── SALVAR SEMANA ─────────────────────────────────────────────────────────
+async function salvar(){
+  const nm=document.getElementById('sn').value.trim();
+  const dt=document.getElementById('sd').value;
+  const lm=document.getElementById('lm');
+  if(!nm){lm.className='err';lm.textContent='⚠ Informe o nome da semana.';return;}
+  if(!dt){lm.className='err';lm.textContent='⚠ Informe a data.';return;}
+  const scP=getScoresFromForm('p',false),scF=getScoresFromForm('f',true);
+  const dup=Object.keys(scP).filter(k=>scF[k]);
+  if(dup.length){lm.className='err';lm.textContent=`⚠ Atleta nos dois grupos: ${dup.join(', ')}`;return;}
+  const sc={...scP,...scF};
+  if(!Object.keys(sc).length){lm.className='err';lm.textContent='⚠ Nenhuma pontuação informada.';return;}
+  lm.className='warn';lm.textContent='⏳ Salvando...';
+  try{
+    // Criar rodada
+    const rod=await sbPost('rodadas',{semana:nm,data:dt});
+    if(!rod||!rod[0]){lm.className='err';lm.textContent='❌ Erro ao criar rodada.';return;}
+    const rodId=rod[0].id;
+    // Salvar scores
+    const scArr=Object.entries(sc).map(([atleta_nome,d])=>({
+      rodada_id:rodId, atleta_nome, g1:d.g1, g2:d.g2, g3:d.g3,
+      media:d.media, fora_prazo:d.fp
+    }));
+    await sbPost('scores',scArr);
+    lm.className='ok';lm.textContent=`✓ "${nm}" salva! ${Object.keys(sc).length} atleta(s).`;
+    await carregarDados();
+    document.getElementById('sn').value='Semana '+(rodadas.length+1);
+  }catch(e){lm.className='err';lm.textContent='❌ Erro ao salvar: '+e.message;}
+}
+
+function limpar(){
+  ['p','f'].forEach(p=>{atletas.forEach((_,i)=>{
+    ['g1','g2','g3'].forEach(g=>{const el=document.getElementById(p+g+i);if(el)el.value='';});
+    ['tot','md','mx'].forEach(x=>{const el=document.getElementById(p+x+i);if(el)el.textContent='—';});
+  });});
+  document.getElementById('lm').textContent='';
+  document.getElementById('sn').value='Semana '+(rodadas.length+1);
+  atualizarTotalDia('p','f');
+}
+
+// ── HISTÓRICO ADMIN ───────────────────────────────────────────────────────
+function calcSemanaLocal(rodadaId){
+  const pp=PP(),bon=BONUS();
+  const sc=scores.filter(s=>s.rodada_id===rodadaId);
+  const adjMap={};
+  sc.forEach(s=>{const a=gamesAdj(s.atleta_nome,s.g1,s.g2,s.g3);adjMap[s.atleta_nome]={...a,fp:s.fora_prazo};});
+  const np=Object.entries(adjMap).filter(([,d])=>!d.fp&&d.media>0);
+  const fp=Object.entries(adjMap).filter(([,d])=>d.fp&&d.media>0);
+  const srtM=(a,b)=>b[1].media!==a[1].media?b[1].media-a[1].media:cmpLinha(b[1],a[1])*-1;
+  np.sort(srtM);fp.sort(srtM);
+  const bonWin=getBonusWinners(adjMap);
+  const res={};
+  let pos=1,i=0;
+  while(i<np.length){let j=i;while(j<np.length&&np[j][1].media===np[i][1].media)j++;const ptG=pp[pos]||20;for(let k=i;k<j;k++){const[nm]=np[k],b=bonWin.has(nm)?bon:0;res[nm]={pts:ptG+b,pos,b,fp:false};}pos+=(j-i);i=j;}
+  fp.forEach(([nm,d])=>{const acima=np.filter(([,x])=>x.media>d.media).length;const posG=acima+1,b=bonWin.has(nm)?bon:0;res[nm]={pts:(pp[posG]||20)+b,pos:posG,b,fp:true};});
+  return res;
+}
+
+function rHistorico(){
+  const el=document.getElementById('hist-list');
+  if(!rodadas.length){el.innerHTML='<div class="empty">📭 Nenhuma semana registrada.</div>';return;}
+  const sorted=[...rodadas].sort((a,b)=>b.data.localeCompare(a.data));
+  el.innerHTML=sorted.map(r=>{
+    const pr=calcSemanaLocal(r.id);
+    const sc=scores.filter(x=>x.rodada_id===r.id);
+    const adjArr=sc.map(x=>({nm:x.atleta_nome,...gamesAdj(x.atleta_nome,x.g1,x.g2,x.g3),fp:x.fora_prazo,g1r:x.g1,g2r:x.g2,g3r:x.g3}))
+      .filter(x=>x.media>0).sort((a,b)=>(pr[a.nm]?.pos||99)-(pr[b.nm]?.pos||99));
+    const chips=adjArr.map(x=>{
+      const re=pr[x.nm]||{pts:20,b:0};
+      const tot=(x.g1r||0)+(x.g2r||0)+(x.g3r||0);
+      return`<span class="chip${re.b?' best':''}">${x.fp?'<span class="late-badge">fora</span>':''}<strong>${x.nm}</strong>: ${tot} (${x.media.toFixed(1)}) — <strong>${re.pts}pts</strong></span>`;
+    }).join('');
+    const tp=adjArr.reduce((a,x)=>a+(x.g1r||0)+(x.g2r||0)+(x.g3r||0),0);
+    const mediaD=adjArr.length?(tp/adjArr.length/3).toFixed(1):'—';
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+        <div><strong style="font-size:15px;">${r.semana}</strong>
+          <span style="font-size:11px;color:#999;margin-left:8px;">${fmtD(r.data)}</span>
+          <span style="font-size:11px;color:#888;margin-left:8px;">${adjArr.length} atletas</span></div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm" onclick="abrirEdicao('${r.id}','${r.semana}','${r.data}')">✏️ Editar</button>
+          <button class="btn btn-sm btn-d" onclick="delRodada('${r.id}')">✕</button>
+        </div>
+      </div>
+      <div>${chips}</div>
+      <div style="background:#f0f7ff;border:1px solid #b3d4f5;border-radius:8px;padding:7px 12px;font-size:12px;margin-top:8px;">
+        Total: <b>${tp}</b> pinos &nbsp;|&nbsp; Atletas: <b>${adjArr.length}</b> &nbsp;|&nbsp; Média: <b>${mediaD}</b>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── EDIÇÃO DE SEMANA (modal inline) ──────────────────────────────────────
+let editRodadaId=null;
+function abrirEdicao(id,semana,data){
+  editRodadaId=id;
+  // Montar os dados existentes
+  const scRod=scores.filter(x=>x.rodada_id===id);
+  const npDados={},fpDados={};
+  scRod.forEach(x=>{if(x.fora_prazo)fpDados[x.atleta_nome]={g1:x.g1,g2:x.g2,g3:x.g3,media:x.media};else npDados[x.atleta_nome]={g1:x.g1,g2:x.g2,g3:x.g3,media:x.media};});
+  const html=`<div class="card" id="edit-card" style="border:2px solid #1a1a1a;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <strong style="font-size:15px;">✏️ Editando: ${semana}</strong>
+      <button class="btn btn-sm btn-d" onclick="fecharEdicao()">✕ Cancelar</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      <div><div style="font-size:11px;color:#aaa;margin-bottom:3px;">Nome</div><input type="text" id="ed-nome" value="${semana}" style="width:155px;"></div>
+      <div><div style="font-size:11px;color:#aaa;margin-bottom:3px;">Data</div><input type="date" id="ed-data" value="${data}" style="width:145px;"></div>
+    </div>
+    <p class="sec">✅ No prazo</p>
+    <div class="gh" style="padding-bottom:7px;border-bottom:2px solid #f0f0f0;margin-bottom:7px;">
+      <span style="font-size:10px;font-weight:700;color:#bbb;">ATLETA</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G1</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G2</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G3</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">TOTAL</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">MÉDIA</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">MELHOR LINHA</span>
+    </div>
+    <div id="ed-prazo"></div>
+    <p class="sec" style="color:#8e44ad;margin-top:12px;">🕐 Fora do prazo</p>
+    <div class="gh" style="padding-bottom:7px;border-bottom:2px solid #f5f0fa;margin-bottom:7px;">
+      <span style="font-size:10px;font-weight:700;color:#bbb;">ATLETA</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G1</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G2</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">G3</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">TOTAL</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">MÉDIA</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;display:block;">MELHOR LINHA</span>
+    </div>
+    <div id="ed-fora"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button class="btn btn-p" onclick="salvarEdicao()">✓ Salvar alterações</button>
+      <button class="btn" onclick="fecharEdicao()">Cancelar</button>
+    </div>
+    <div id="ed-msg"></div>
+  </div>`;
+  document.getElementById('hist-list').insertAdjacentHTML('afterbegin',html);
+  rGames('ed-prazo','ep',npDados);
+  rGames('ed-fora','ef',fpDados);
+  document.getElementById('edit-card').scrollIntoView({behavior:'smooth'});
+}
+
+function fecharEdicao(){
+  const el=document.getElementById('edit-card');if(el)el.remove();
+  editRodadaId=null;
+}
+
+async function salvarEdicao(){
+  if(!editRodadaId)return;
+  const nm=document.getElementById('ed-nome').value.trim();
+  const dt=document.getElementById('ed-data').value;
+  const msg=document.getElementById('ed-msg');
+  if(!nm||!dt){msg.className='err';msg.textContent='⚠ Preencha nome e data.';return;}
+  const scP=getScoresFormEd('ep',false),scF=getScoresFormEd('ef',true);
+  const sc={...scP,...scF};
+  if(!Object.keys(sc).length){msg.className='err';msg.textContent='⚠ Nenhuma pontuação.';return;}
+  msg.className='warn';msg.textContent='⏳ Salvando...';
+  try{
+    await sbPatch('rodadas','id=eq.'+editRodadaId,{semana:nm,data:dt});
+    await sbDelete('scores','rodada_id=eq.'+editRodadaId);
+    const arr=Object.entries(sc).map(([atleta_nome,d])=>({rodada_id:editRodadaId,atleta_nome,g1:d.g1,g2:d.g2,g3:d.g3,media:d.media,fora_prazo:d.fp}));
+    await sbPost('scores',arr);
+    msg.className='ok';msg.textContent='✓ Salvo!';
+    await carregarDados();
+    setTimeout(fecharEdicao,800);
+    rHistorico();
+  }catch(e){msg.className='err';msg.textContent='❌ Erro: '+e.message;}
+}
+
+function getScoresFormEd(pfx,fp){
+  const sc={};
+  atletas.forEach((a,i)=>{
+    const g1r=+document.getElementById(pfx+'g1'+i)?.value||0;
+    const g2r=+document.getElementById(pfx+'g2'+i)?.value||0;
+    const g3r=+document.getElementById(pfx+'g3'+i)?.value||0;
+    const adj=gamesAdj(a.nome,g1r,g2r,g3r);
+    if(adj.media>0)sc[a.nome]={g1:g1r,g2:g2r,g3:g3r,media:adj.media,fp};
+  });
+  return sc;
+}
+
+async function delRodada(id){
+  if(!confirm('Excluir esta semana? Todos os scores serão apagados.'))return;
+  await sbDelete('scores','rodada_id=eq.'+id);
+  await sbDelete('rodadas','id=eq.'+id);
+  toast('Semana excluída');
+  await carregarDados();
+  rHistorico();
+}
+
+// ── ATLETAS ───────────────────────────────────────────────────────────────
+async function rAtletas(){
+  const tbody=document.getElementById('atletas-tbody');
+  const todos=await sbGet('atletas','order=nome');
+  tbody.innerHTML=todos.map(a=>{
+    const c=ac(a.nome);
+    const av=a.foto_url?`<img src="${a.foto_url}" class="av">`:`<div class="av-ini" style="background:${c}20;color:${c};">${ini(a.nome)}</div>`;
+    return`<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">${av}
+          <label class="btn btn-sm" style="cursor:pointer;padding:2px 8px;font-size:10px;">
+            📷 <input type="file" accept="image/*" style="display:none" onchange="uploadFoto('${a.id}',this)">
+          </label>
+        </div>
+      </td>
+      <td><strong>${a.nome}</strong></td>
+      <td>
+        <select onchange="toggleFem('${a.id}',this.value)" style="height:28px;font-size:12px;">
+          <option value="false" ${!a.feminino?'selected':''}>♂ Masculino</option>
+          <option value="true"  ${a.feminino?'selected':''}>♀ Feminino (+${HCP()})</option>
+        </select>
+      </td>
+      <td><span style="font-size:11px;color:${a.externo?'#2980b9':'#888'};">${a.externo?'👤 Externo':'🎳 Plantel'}</span></td>
+      <td>
+        <select onchange="toggleAtivo('${a.id}',this.value)" style="height:28px;font-size:12px;">
+          <option value="true"  ${a.ativo?'selected':''}>✅ Ativo</option>
+          <option value="false" ${!a.ativo?'selected':''}>❌ Inativo</option>
+        </select>
+      </td>
+      <td><button class="btn btn-sm btn-d" onclick="delAtleta('${a.id}','${a.nome}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function adicionarAtleta(){
+  const nm=document.getElementById('novo-nome').value.trim().toUpperCase();
+  const fem=document.getElementById('novo-fem').checked;
+  const ext=document.getElementById('novo-ext').checked;
+  const msg=document.getElementById('msg-atleta');
+  if(!nm){msg.className='err';msg.textContent='⚠ Digite um nome.';return;}
+  await sbPost('atletas',{nome:nm,feminino:fem,externo:ext,ativo:true});
+  document.getElementById('novo-nome').value='';
+  document.getElementById('novo-fem').checked=false;
+  document.getElementById('novo-ext').checked=false;
+  msg.className='ok';msg.textContent=`✓ ${nm} adicionado!`;
+  await carregarDados();rAtletas();
+}
+
+async function toggleFem(id,val){
+  await sbPatch('atletas','id=eq.'+id,{feminino:val==='true'});
+  await carregarDados();rAtletas();toast('Atleta atualizado');
+}
+async function toggleAtivo(id,val){
+  await sbPatch('atletas','id=eq.'+id,{ativo:val==='true'});
+  await carregarDados();rAtletas();toast('Atleta atualizado');
+}
+async function delAtleta(id,nome){
+  if(!confirm(`Remover ${nome}? Os scores históricos serão mantidos.`))return;
+  await sbPatch('atletas','id=eq.'+id,{ativo:false});
+  await carregarDados();rAtletas();toast('Atleta removido');
+}
+
+async function uploadFoto(id,input){
+  const file=input.files[0];if(!file)return;
+  const ext=file.name.split('.').pop();
+  const path=`atleta_${id}.${ext}`;
+  toast('⏳ Enviando foto...');
+  const r=await fetch(`${SB_URL}/storage/v1/object/fotos-atletas/${path}`,{
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+AUTH_TOKEN,'Content-Type':file.type,'x-upsert':'true'},
+    body:file
+  });
+  if(r.ok){
+    const url=`${SB_URL}/storage/v1/object/public/fotos-atletas/${path}`;
+    await sbPatch('atletas','id=eq.'+id,{foto_url:url});
+    await carregarDados();rAtletas();toast('✓ Foto atualizada!');
+  }else{toast('❌ Erro ao enviar foto');}
+}
+
+// ── TORNEIO ───────────────────────────────────────────────────────────────
+let TRN={fase:'config',formato:null,nome:'',data:'',modoMataMata:'1game',chaveamento:'sorteio',participantes:[],classScores:{},classOrdem:[],rounds:[],campeao:null};
+
+function rTorneio(){
+  const el=document.getElementById('trn-main');if(!el)return;
+  if(TRN.fase==='config')el.innerHTML=htmlTrnConfig();
+  else if(TRN.fase==='classificatoria')el.innerHTML=htmlTrnClass();
+  else if(TRN.fase==='bracket')el.innerHTML=htmlTrnBracket();
+  else if(TRN.fase==='encerrado')el.innerHTML=htmlTrnEncerrado();
+}
+
+function htmlTrnConfig(){
+  const pills=atletas.map(a=>{
+    const sel=TRN.participantes.find(p=>p.nome===a.nome);
+    return`<span class="trn-atleta-pill${sel?' selected':''}" onclick="trnToggle('${a.nome}',${!!a.externo})">${a.nome}${a.feminino?` <span class="fem-badge">♀</span>`:''}</span>`;
+  }).join('');
+  return`<div class="card">
+    <p class="sec">Novo torneio</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+      <div><div style="font-size:11px;color:#aaa;margin-bottom:3px;">Nome</div>
+        <input type="text" id="trn-nome" value="${TRN.nome}" oninput="TRN.nome=this.value" placeholder="Ex: Torneio de Páscoa" style="width:220px;"></div>
+      <div><div style="font-size:11px;color:#aaa;margin-bottom:3px;">Data</div>
+        <input type="date" id="trn-data" value="${TRN.data}" oninput="TRN.data=this.value" style="width:150px;"></div>
+    </div>
+    <p class="sec">Formato</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <button class="btn ${TRN.formato==='F1'?'btn-p':''}" onclick="TRN.formato='F1';rTorneio()">📋 F1 — Classificatória + Mata-mata</button>
+      <button class="btn ${TRN.formato==='F2'?'btn-p':''}" onclick="TRN.formato='F2';rTorneio()">⚡ F2 — Só Mata-mata</button>
+    </div>
+    ${TRN.formato?`
+    <p class="sec">Modo mata-mata</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      ${['1game','melhor3','media2','soma2'].map(m=>`<button class="btn btn-sm ${TRN.modoMataMata===m?'btn-p':''}" onclick="TRN.modoMataMata='${m}';rTorneio()">${{'1game':'1 Game','melhor3':'Melhor de 3','media2':'Média de 2','soma2':'Soma de 2'}[m]}</button>`).join('')}
+    </div>
+    ${TRN.formato==='F1'?`
+    <p class="sec">Chaveamento</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      <button class="btn btn-sm ${TRN.chaveamento==='sorteio'?'btn-p':''}" onclick="TRN.chaveamento='sorteio';rTorneio()">🎲 Sorteio</button>
+      <button class="btn btn-sm ${TRN.chaveamento==='ranking'?'btn-p':''}" onclick="TRN.chaveamento='ranking';rTorneio()">📊 1º vs Último</button>
+    </div>`:''}
+    <p class="sec">Atletas (${TRN.participantes.length} selecionados)</p>
+    <div style="margin-bottom:12px;">${pills}</div>
+    <div id="trn-cfg-msg" style="font-size:12px;"></div>
+    <button class="btn btn-p" onclick="trnIniciar()" style="margin-top:8px;">${TRN.formato==='F1'?'▶ Iniciar classificatória':'▶ Montar chaveamento'}</button>
+    `:'<p style="font-size:13px;color:#999;">Selecione um formato para continuar.</p>'}
+  </div>`;
+}
+
+function trnToggle(nome,ext){
+  const idx=TRN.participantes.findIndex(p=>p.nome===nome);
+  if(idx>=0)TRN.participantes.splice(idx,1);else TRN.participantes.push({nome,externo:ext});
+  rTorneio();
+}
+
+function trnIniciar(){
+  const msg=document.getElementById('trn-cfg-msg');
+  if(!TRN.nome.trim()){msg.textContent='⚠ Informe o nome do torneio.';msg.className='err';return;}
+  if(!TRN.data){msg.textContent='⚠ Informe a data.';msg.className='err';return;}
+  if(TRN.participantes.length<2){msg.textContent='⚠ Selecione pelo menos 2 atletas.';msg.className='err';return;}
+  if(TRN.formato==='F1'){
+    TRN.fase='classificatoria';TRN.classScores={};
+    TRN.participantes.forEach(p=>{TRN.classScores[p.nome]={g1:0,g2:0,g3:0,media:0};});
+  }else{TRN.classOrdem=TRN.participantes.map(p=>p.nome);trnMontarBracket();}
+  rTorneio();
+}
+
+function htmlTrnClass(){
+  const rows=TRN.participantes.map((p,i)=>{
+    const s=TRN.classScores[p.nome]||{g1:'',g2:'',g3:'',media:0};
+    const fem=isFem(p.nome)?`<span class="hcp-tag">+${HCP()}</span>`:'';
+    return`<div class="fase-class-row" style="display:grid;grid-template-columns:30px 1fr 60px 60px 60px 70px 80px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid #f5f5f5;" id="fcr${i}">
+      <span style="color:#bbb;font-weight:700;font-size:12px;">${i+1}</span>
+      <span style="font-size:13px;">${p.nome}${fem}</span>
+      <input class="score-input" type="number" min="0" max="300" placeholder="G1" value="${s.g1||''}" oninput="trnCI('${p.nome}',1,this.value)">
+      <input class="score-input" type="number" min="0" max="300" placeholder="G2" value="${s.g2||''}" oninput="trnCI('${p.nome}',2,this.value)">
+      <input class="score-input" type="number" min="0" max="300" placeholder="G3" value="${s.g3||''}" oninput="trnCI('${p.nome}',3,this.value)">
+      <span id="fcmed${i}" style="text-align:center;font-weight:700;color:#555;">${s.media>0?s.media.toFixed(1):'—'}</span>
+      <span id="fctot${i}" style="text-align:center;font-size:12px;color:#2c3e50;">${s.media>0?(s.g1||0)+(s.g2||0)+(s.g3||0):'—'}</span>
+    </div>`;
+  }).join('');
+  return`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <strong style="font-size:16px;">${TRN.nome} — Classificatória</strong>
+      <button class="btn btn-sm btn-d" onclick="trnReset()">✕ Cancelar</button>
+    </div>
+    <div style="display:grid;grid-template-columns:30px 1fr 60px 60px 60px 70px 80px;gap:6px;padding-bottom:8px;border-bottom:2px solid #f0f0f0;margin-bottom:8px;">
+      <span style="font-size:10px;font-weight:700;color:#bbb;">#</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;">ATLETA</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;">G1</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;">G2</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;">G3</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;">MÉDIA</span>
+      <span style="font-size:10px;font-weight:700;color:#bbb;text-align:center;">TOTAL</span>
+    </div>
+    ${rows}
+    <button class="btn btn-p" style="margin-top:12px;" onclick="trnEncerrarClass()">▶ Montar chaveamento</button>
+    <div id="trn-class-msg" style="font-size:12px;margin-top:6px;"></div>
+  </div>`;
+}
+
+function trnCI(nome,g,val){
+  if(!TRN.classScores[nome])TRN.classScores[nome]={g1:0,g2:0,g3:0,media:0};
+  TRN.classScores[nome]['g'+g]=+val||0;
+  const s=TRN.classScores[nome];
+  const adj=gamesAdj(nome,s.g1,s.g2,s.g3);
+  Object.assign(TRN.classScores[nome],{media:adj.media,g1adj:adj.g1,g2adj:adj.g2,g3adj:adj.g3});
+  const idx=TRN.participantes.findIndex(p=>p.nome===nome);
+  if(idx>=0){
+    const m=document.getElementById('fcmed'+idx);const t=document.getElementById('fctot'+idx);
+    if(m)m.textContent=adj.media>0?adj.media.toFixed(1):'—';
+    if(t)t.textContent=adj.media>0?adj.g1+adj.g2+adj.g3:'—';
+  }
+}
+
+function trnEncerrarClass(){
+  const msg=document.getElementById('trn-class-msg');
+  const ok=TRN.participantes.filter(p=>TRN.classScores[p.nome]?.media>0);
+  if(ok.length<2){msg.className='err';msg.textContent='⚠ Pelo menos 2 atletas precisam ter pontuação.';return;}
+  ok.sort((a,b)=>{const sa=TRN.classScores[a.nome],sb=TRN.classScores[b.nome];
+    if(sb.media!==sa.media)return sb.media-sa.media;
+    return cmpLinha({g1:sa.g1adj,g2:sa.g2adj,g3:sa.g3adj},{g1:sb.g1adj,g2:sb.g2adj,g3:sb.g3adj})*-1;});
+  TRN.classOrdem=ok.map(p=>p.nome);
+  trnMontarBracket();
+}
+
+function trnNomeRound(n){
+  if(n>=8)return'Oitavas';if(n===4)return'Quartas';if(n===2)return'Semifinal';if(n===1)return'Final';return`Rodada (${n})`;
+}
+
+function trnMontarBracket(){
+  let ordem=[...TRN.classOrdem];
+  if(TRN.formato==='F2'){
+    const rank=atletas.map(a=>a.nome);
+    const seeds=rank.filter(n=>TRN.participantes.find(p=>p.nome===n));
+    const naoSeeds=TRN.participantes.map(p=>p.nome).filter(n=>!seeds.includes(n));
+    for(let i=naoSeeds.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[naoSeeds[i],naoSeeds[j]]=[naoSeeds[j],naoSeeds[i]];}
+    ordem=[...seeds,...naoSeeds];
+  }else if(TRN.chaveamento==='sorteio'){
+    for(let i=ordem.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ordem[i],ordem[j]]=[ordem[j],ordem[i]];}
+  }
+  let tam=1;while(tam<ordem.length)tam*=2;
+  while(ordem.length<tam)ordem.push(null);
+  const partidas=[];
+  if(TRN.chaveamento==='ranking'&&TRN.formato==='F1'){
+    const ativos=ordem.filter(x=>x!==null);
+    const byes=tam-ativos.length;
+    for(let i=0;i<byes;i++)partidas.push({p1:ativos[i],p2:null,scores1:[],scores2:[],vencedor:ativos[i]});
+    const rest=ativos.slice(byes);
+    for(let i=0;i<rest.length/2;i++)partidas.push({p1:rest[i],p2:rest[rest.length-1-i],scores1:[],scores2:[],vencedor:null});
+  }else{
+    for(let i=0;i<tam;i+=2){
+      const p1=ordem[i],p2=ordem[i+1];
+      partidas.push({p1,p2,scores1:[],scores2:[],vencedor:p2===null?p1:null});
+    }
+  }
+  TRN.rounds=[{nome:trnNomeRound(partidas.length),partidas}];
+  TRN.fase='bracket';rTorneio();
+}
+
+function htmlTrnBracket(){
+  const rHTML=TRN.rounds.map((round,ri)=>`
+    <div class="bracket-round">
+      <div class="bracket-round-title">${round.nome}</div>
+      ${round.partidas.map((m,mi)=>htmlMatch(m,ri,mi)).join('')}
+    </div>`).join('');
+  const ultima=TRN.rounds[TRN.rounds.length-1];
+  const todasOk=ultima&&ultima.partidas.every(m=>m.vencedor!==null);
+  const isFinal=ultima&&ultima.partidas.length===1&&ultima.partidas[0].vencedor;
+  return`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <strong style="font-size:16px;">${TRN.nome}</strong>
+      <button class="btn btn-sm btn-d" onclick="trnReset()">✕ Cancelar</button>
+    </div>
+    <div class="bracket">${rHTML}</div>
+    ${todasOk&&!isFinal?`<button class="btn btn-p" style="margin-top:12px;" onclick="trnProxRound()">▶ Próxima fase</button>`:''}
+    ${isFinal?`<div style="margin-top:16px;background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:1rem 1.25rem;">
+      <div style="font-size:12px;color:#7d4e00;font-weight:700;margin-bottom:4px;">🏆 CAMPEÃO</div>
+      <div class="trn-campeao">${ultima.partidas[0].vencedor}</div>
+      <button class="btn btn-p" style="margin-top:12px;" onclick="trnEncerrar()">✓ Encerrar e salvar</button>
+    </div>`:''}
+  </div>`;
+}
+
+function htmlMatch(m,ri,mi){
+  const modo=TRN.modoMataMata;
+  const nG=modo==='1game'?1:modo==='melhor3'?3:2;
+  if(!m.p2)return`<div class="match-card"><div class="match-player winner"><span style="font-size:11px;flex:1;">${m.p1}</span><span style="font-size:11px;color:#219a52;">BYE</span></div></div>`;
+  const inp=(scores,player)=>Array.from({length:nG},(_,g)=>`<input class="score-input" type="number" min="0" max="300" placeholder="G${g+1}" value="${scores[g]||''}" oninput="trnSS(${ri},${mi},${player},${g},this.value)">`).join('');
+  const r1=trnRes(m,1),r2=trnRes(m,2);
+  const w=m.vencedor;
+  return`<div class="match-card">
+    <div class="match-player ${w===m.p1?'winner':w?'loser':''}">
+      <span style="font-size:11px;flex:1;">${m.p1}</span>
+      <div style="display:flex;gap:3px;">${inp(m.scores1,1)}</div>
+      <span style="min-width:28px;text-align:right;font-weight:700;">${r1!==null?r1:''}</span>
+    </div>
+    <div class="match-sep"></div>
+    <div class="match-player ${w===m.p2?'winner':w?'loser':''}">
+      <span style="font-size:11px;flex:1;">${m.p2}</span>
+      <div style="display:flex;gap:3px;">${inp(m.scores2,2)}</div>
+      <span style="min-width:28px;text-align:right;font-weight:700;">${r2!==null?r2:''}</span>
+    </div>
+  </div>`;
+}
+
+function trnRes(m,pl){
+  const sc=pl===1?m.scores1:m.scores2,modo=TRN.modoMataMata;
+  const vs=sc.filter(v=>v>0);if(!vs.length)return null;
+  if(modo==='1game')return vs[0];
+  if(modo==='soma2')return vs.slice(0,2).reduce((a,b)=>a+b,0);
+  if(modo==='media2')return vs.length>=2?((vs[0]+vs[1])/2).toFixed(1):null;
+  if(modo==='melhor3'){
+    let w=0;
+    for(let i=0;i<Math.min(m.scores1.length,m.scores2.length);i++){if(m.scores1[i]>0&&m.scores2[i]>0){if((pl===1?m.scores1[i]:m.scores2[i])>(pl===1?m.scores2[i]:m.scores1[i]))w++;}}
+    return w;
+  }
+  return null;
+}
+
+function trnSS(ri,mi,pl,g,val){
+  const m=TRN.rounds[ri].partidas[mi];
+  if(pl===1){if(!m.scores1)m.scores1=[];m.scores1[g]=+val||0;}
+  else{if(!m.scores2)m.scores2=[];m.scores2[g]=+val||0;}
+  trnCalcV(ri,mi);
+  document.getElementById('trn-main').innerHTML=htmlTrnBracket();
+}
+
+function trnCalcV(ri,mi){
+  const m=TRN.rounds[ri].partidas[mi];
+  if(!m.p1||!m.p2){m.vencedor=m.p1||m.p2;return;}
+  const r1=trnRes(m,1),r2=trnRes(m,2);
+  if(r1===null||r2===null){m.vencedor=null;return;}
+  const v1=parseFloat(r1),v2=parseFloat(r2);
+  if(TRN.modoMataMata==='melhor3'){
+    let w1=0,w2=0;
+    for(let i=0;i<Math.min(m.scores1.length,m.scores2.length);i++){if(m.scores1[i]>0&&m.scores2[i]>0){if(m.scores1[i]>m.scores2[i])w1++;else if(m.scores2[i]>m.scores1[i])w2++;}}
+    if(w1>w2)m.vencedor=m.p1;else if(w2>w1)m.vencedor=m.p2;else m.vencedor=null;return;
+  }
+  if(v1>v2)m.vencedor=m.p1;else if(v2>v1)m.vencedor=m.p2;
+  else{
+    const mx1=Math.max(...(m.scores1.filter(v=>v>0)||[0]));
+    const mx2=Math.max(...(m.scores2.filter(v=>v>0)||[0]));
+    if(mx1>mx2)m.vencedor=m.p1;else if(mx2>mx1)m.vencedor=m.p2;else m.vencedor=null;
+  }
+}
+
+function trnProxRound(){
+  const ul=TRN.rounds[TRN.rounds.length-1];
+  const vs=ul.partidas.map(m=>m.vencedor).filter(Boolean);
+  if(vs.length<2)return;
+  const np=[];
+  for(let i=0;i<vs.length;i+=2)np.push({p1:vs[i],p2:vs[i+1]||null,scores1:[],scores2:[],vencedor:vs[i+1]?null:vs[i]});
+  TRN.rounds.push({nome:trnNomeRound(np.length),partidas:np});rTorneio();
+}
+
+async function trnEncerrar(){
+  const ul=TRN.rounds[TRN.rounds.length-1];
+  const camp=ul.partidas[0].vencedor;
+  TRN.campeao=camp;TRN.fase='encerrado';
+  await sbPost('torneios',{
+    nome:TRN.nome,data:TRN.data,formato:TRN.formato,modo_mata_mata:TRN.modoMataMata,
+    campeao:camp,participantes:TRN.participantes.map(p=>p.nome),
+    class_ordem:TRN.classOrdem,rounds:TRN.rounds
+  });
+  toast('✓ Torneio salvo!');rTorneio();
+}
+
+function htmlTrnEncerrado(){
+  return`<div class="card" style="background:#fff8e1;border-color:#ffe082;text-align:center;padding:2rem;">
+    <div style="font-size:40px;margin-bottom:8px;">🏆</div>
+    <div class="trn-campeao">${TRN.campeao}</div>
+    <div style="font-size:13px;color:#7d4e00;margin-top:4px;">${TRN.nome} · ${fmtD(TRN.data)}</div>
+    <button class="btn btn-p" style="margin-top:16px;" onclick="trnReset()">+ Novo torneio</button>
+  </div>`;
+}
+
+function trnReset(){
+  if(TRN.fase!=='config'&&!confirm('Cancelar o torneio?'))return;
+  TRN={fase:'config',formato:null,nome:'',data:new Date().toISOString().slice(0,10),modoMataMata:'1game',chaveamento:'sorteio',participantes:[],classScores:{},classOrdem:[],rounds:[],campeao:null};
+  rTorneio();
+}
+
+// ── CONFIG ────────────────────────────────────────────────────────────────
+function rConfig(){
+  document.getElementById('pts-edit').innerHTML=Object.keys(PP_DEF).map(p=>`
+    <div class="pts-edit-row"><label>${p}º lugar</label>
+      <input type="number" id="pp${p}" min="0" max="999" value="${(PP())[p]||PP_DEF[p]}"></div>`).join('');
+  document.getElementById('bonus-val').value=BONUS();
+  document.getElementById('hcp-val').value=HCP();
+}
+
+async function salvarPontos(){
+  const np={},msg=document.getElementById('pts-msg');let ok=true;
+  Object.keys(PP_DEF).forEach(p=>{const v=+document.getElementById('pp'+p).value;if(isNaN(v)||v<0)ok=false;np[p]=v;});
+  if(!ok){msg.className='err';msg.textContent='⚠ Valores inválidos.';return;}
+  await sbPatch('configuracao','id=eq.1',{pontos_pos:np});
+  msg.className='ok';msg.textContent='✓ Salvo!';
+  await carregarDados();toast('Pontos atualizados');
+}
+async function resetarPontos(){if(!confirm('Resetar?'))return;await sbPatch('configuracao','id=eq.1',{pontos_pos:PP_DEF});await carregarDados();rConfig();toast('Pontos resetados');}
+async function salvarConfig(){
+  const b=+document.getElementById('bonus-val').value;
+  const h=+document.getElementById('hcp-val').value;
+  const msg=document.getElementById('cfg-msg');
+  if(isNaN(b)||b<0||isNaN(h)||h<0){msg.className='err';msg.textContent='⚠ Valores inválidos.';return;}
+  await sbPatch('configuracao','id=eq.1',{bonus_linha:b,handicap_feminino:h});
+  msg.className='ok';msg.textContent='✓ Salvo!';
+  await carregarDados();toast('Configurações salvas');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function tab(t){
+  ['lancar','historico','atletas','torneio','ptsextra','config'].forEach(id=>{document.getElementById('t-'+id).style.display=id===t?'':'none';});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['lancar','historico','atletas','torneio','ptsextra','config'][i]===t);});
+  if(t==='historico')rHistorico();
+  else if(t==='atletas')rAtletas();
+  else if(t==='torneio'){TRN.data=new Date().toISOString().slice(0,10);rTorneio();}
+  else if(t==='ptsextra'){rPtsExtraSelects();rPtsExtraHist();document.getElementById('pte-data').value=new Date().toISOString().slice(0,10);}
+  else if(t==='config')rConfig();
+}
+
+function toast(msg,dur=2500){
+  const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';
+  setTimeout(()=>el.style.display='none',dur);
+}
+
+// ══════════════════════════════════════════════════════
+// IMPORTAR EXCEL
+// ══════════════════════════════════════════════════════
+let excelDados = {}; // { "03/02/2026": { BENITO:{g1,g2,g3}, ... } }
+
+function lerExcel(input){
+  const file = input.files[0];
+  if(!file) return;
+  const msg = document.getElementById('excel-msg');
+  msg.textContent = '⏳ Lendo planilha...';
+  msg.className = 'warn';
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+
+      excelDados = {};
+
+      // Linha 0: cabeçalhos de rodada (ex: "RODADA 03/02/2026")
+      // Linha 1: sub-cabeçalhos (JOGADOR, PISTA, GAME 1, GAME 2, GAME 3, Bonus, Total, Media...)
+      // Linhas 2+: dados dos jogadores
+
+      const headerRow = rows[0] || [];
+      const subHeaderRow = rows[1] || [];
+
+      // Mapear cada bloco de rodada: encontrar colunas pelo sub-cabeçalho
+      const rodadasMap = []; // [{data, colG1, colG2, colG3}]
+
+      headerRow.forEach((cell, ci) => {
+        const txt = String(cell).trim();
+        if(txt.startsWith('RODADA')) {
+          // Extrair data do cabeçalho "RODADA DD/MM/AAAA"
+          const match = txt.match(/(\d{2}\/\d{2}\/\d{4})/);
+          if(!match) return;
+          const dataStr = match[1]; // "03/02/2026"
+
+          // Encontrar colunas GAME 1, 2, 3 neste bloco
+          // O bloco começa na coluna ci e vai por 8 colunas
+          let colG1=-1, colG2=-1, colG3=-1;
+          for(let c = ci; c < ci+8 && c < subHeaderRow.length; c++){
+            const sub = String(subHeaderRow[c]).trim().toUpperCase();
+            if(sub === 'GAME 1' || sub === 'G1') colG1 = c;
+            else if(sub === 'GAME 2' || sub === 'G2') colG2 = c;
+            else if(sub === 'GAME 3' || sub === 'G3') colG3 = c;
+          }
+
+          if(colG1>=0 && colG2>=0 && colG3>=0){
+            rodadasMap.push({data:dataStr, colG1, colG2, colG3});
+            excelDados[dataStr] = {};
+          }
+        }
+      });
+
+      if(!rodadasMap.length){
+        msg.textContent = '❌ Formato não reconhecido. Verifique se a planilha tem "RODADA DD/MM/AAAA" no cabeçalho.';
+        msg.className = 'err';
+        return;
+      }
+
+      // Coluna do JOGADOR é sempre a coluna 0
+      for(let ri = 2; ri < rows.length; ri++){
+        const row = rows[ri];
+        const jogador = String(row[0]||'').trim().toUpperCase();
+        if(!jogador) continue;
+
+        rodadasMap.forEach(rod => {
+          const g1 = parseInt(row[rod.colG1]) || 0;
+          const g2 = parseInt(row[rod.colG2]) || 0;
+          const g3 = parseInt(row[rod.colG3]) || 0;
+          if(g1 > 0 || g2 > 0 || g3 > 0){
+            excelDados[rod.data][jogador] = {g1, g2, g3};
+          }
+        });
+      }
+
+      // Mostrar botões de seleção de semana
+      const semanas = Object.keys(excelDados);
+      const listEl = document.getElementById('excel-semanas-list');
+      listEl.innerHTML = semanas.map(dt => {
+        const count = Object.keys(excelDados[dt]).length;
+        return `<button class="btn btn-sm" onclick="importarSemana('${dt}')" style="border-color:#2980b9;color:#2980b9;">
+          📅 ${dt} <span style="font-size:10px;color:#888;margin-left:4px;">(${count} atletas)</span>
+        </button>`;
+      }).join('');
+
+      document.getElementById('excel-semanas').style.display = 'block';
+      msg.textContent = `✓ Planilha lida! ${semanas.length} semana(s) encontrada(s). Clique em uma para preencher.`;
+      msg.className = 'ok';
+
+    } catch(err){
+      msg.textContent = '❌ Erro ao ler planilha: ' + err.message;
+      msg.className = 'err';
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function importarSemana(dataStr){
+  const dados = excelDados[dataStr];
+  if(!dados) return;
+
+  // Converter data DD/MM/AAAA para AAAA-MM-DD
+  const partes = dataStr.split('/');
+  const dataISO = `${partes[2]}-${partes[1]}-${partes[0]}`;
+
+  // Preencher identificação
+  // Descobrir número da semana (rodadas.length + 1 ou pela data)
+  const semNum = rodadas.length + 1;
+  const snEl = document.getElementById('sn');
+  const sdEl = document.getElementById('sd');
+  if(snEl) snEl.value = 'Semana ' + semNum;
+  if(sdEl) sdEl.value = dataISO;
+
+  // Limpar campos antes
+  atletas.forEach((a,i)=>{
+    ['p','f'].forEach(p=>{
+      ['g1','g2','g3'].forEach(g=>{const el=document.getElementById(p+g+i);if(el)el.value='';});
+      ['tot','md','mx'].forEach(x=>{const el=document.getElementById(p+x+i);if(el)el.textContent='—';});
+    });
+  });
+
+  // Preencher games dos atletas encontrados
+  let preenchidos = 0, naoEncontrados = [];
+  Object.entries(dados).forEach(([jogNome, sc]) => {
+    // Encontrar índice do atleta (busca flexível)
+    const idx = atletas.findIndex(a =>
+      a.nome === jogNome ||
+      a.nome.includes(jogNome) ||
+      jogNome.includes(a.nome)
+    );
+
+    if(idx >= 0){
+      const pfx = 'p'; // padrão: no prazo
+      const g1El = document.getElementById(pfx+'g1'+idx);
+      const g2El = document.getElementById(pfx+'g2'+idx);
+      const g3El = document.getElementById(pfx+'g3'+idx);
+      if(g1El){ g1El.value = sc.g1||''; }
+      if(g2El){ g2El.value = sc.g2||''; }
+      if(g3El){ g3El.value = sc.g3||''; }
+      // Disparar cálculo
+      cm(pfx, idx);
+      preenchidos++;
+    } else {
+      naoEncontrados.push(jogNome);
+    }
+  });
+
+  const msg = document.getElementById('excel-msg');
+  let txt = `✓ Semana ${dataStr} importada! ${preenchidos} atleta(s) preenchido(s).`;
+  if(naoEncontrados.length) txt += ` Não encontrados: ${naoEncontrados.join(', ')}`;
+  msg.textContent = txt;
+  msg.className = preenchidos > 0 ? 'ok' : 'err';
+
+  // Scroll para o formulário
+  document.getElementById('sn')?.scrollIntoView({behavior:'smooth', block:'center'});
+
+  toast(`✓ ${preenchidos} atletas importados de ${dataStr}`);
+}
+
+// ══════════════════════════════════════════════════════
+// TORNEIOS EXTRAS (pontos direto no ranking)
+// ══════════════════════════════════════════════════════
+
+function rPtsExtraSelects(){
+  const opts = '<option value="">Selecionar atleta</option>' +
+    atletas.map(a=>`<option value="${a.nome}">${a.nome}</option>`).join('');
+  ['pte-1','pte-2','pte-3'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ const cur=el.value; el.innerHTML=opts; el.value=cur; }
+  });
+}
+
+async function rPtsExtraHist(){
+  const el=document.getElementById('pte-hist');
+  if(!el) return;
+  const data = await sbGet('torneios_extra','order=data.desc');
+  if(!data||!data.length){
+    el.innerHTML='<div class="empty">Nenhum torneio extra lançado ainda.</div>';
+    return;
+  }
+  el.innerHTML=data.map(t=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div>
+          <strong style="font-size:15px;">${t.nome}</strong>
+          <span style="font-size:11px;color:#999;margin-left:8px;">${fmtD(t.data)}</span>
+        </div>
+        <button class="btn btn-sm btn-d" onclick="delPtsExtra('${t.id}')">✕ Excluir</button>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+        ${t.primeiro?`<span style="background:#fff8e1;border:1px solid #ffe082;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700;">🥇 ${t.primeiro} <span style="color:#c9960c;">+200pts</span></span>`:''}
+        ${t.segundo?`<span style="background:#f5f5f5;border:1px solid #ddd;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700;">🥈 ${t.segundo} <span style="color:#888;">+180pts</span></span>`:''}
+        ${t.terceiro?`<span style="background:#fdf0e8;border:1px solid #f0c8a0;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700;">🥉 ${t.terceiro} <span style="color:#b5651d;">+160pts</span></span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+async function salvarPtsExtra(){
+  const nome=document.getElementById('pte-nome').value.trim();
+  const data=document.getElementById('pte-data').value;
+  const p1=document.getElementById('pte-1').value;
+  const p2=document.getElementById('pte-2').value;
+  const p3=document.getElementById('pte-3').value;
+  const msg=document.getElementById('pte-msg');
+
+  if(!nome){msg.className='err';msg.textContent='⚠ Informe o nome do torneio.';return;}
+  if(!data){msg.className='err';msg.textContent='⚠ Informe a data.';return;}
+  if(!p1&&!p2&&!p3){msg.className='err';msg.textContent='⚠ Selecione pelo menos 1 colocado.';return;}
+
+  // Verificar duplicatas
+  const selecionados=[p1,p2,p3].filter(Boolean);
+  if(new Set(selecionados).size !== selecionados.length){
+    msg.className='err';msg.textContent='⚠ O mesmo atleta não pode estar em mais de uma posição.';return;
+  }
+
+  msg.className='warn';msg.textContent='⏳ Salvando...';
+  try{
+    await sbPost('torneios_extra',{nome,data,primeiro:p1||null,segundo:p2||null,terceiro:p3||null});
+    msg.className='ok';msg.textContent=`✓ "${nome}" salvo!`;
+    document.getElementById('pte-nome').value='';
+    document.getElementById('pte-1').value='';
+    document.getElementById('pte-2').value='';
+    document.getElementById('pte-3').value='';
+    await rPtsExtraHist();
+    toast('✓ Torneio extra salvo!');
+  }catch(e){msg.className='err';msg.textContent='❌ Erro: '+e.message;}
+}
+
+async function delPtsExtra(id){
+  if(!confirm('Excluir este torneio extra? Os pontos serão removidos do ranking.'))return;
+  await sbDelete('torneios_extra','id=eq.'+id);
+  await rPtsExtraHist();
+  toast('Torneio extra excluído');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.getElementById('sd').value=new Date().toISOString().slice(0,10);
+verificarAuth().then(()=>carregarDados());
+</script>
+</body>
+</html>

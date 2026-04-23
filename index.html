@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎳 Ranking Boliche</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14px;}
+.wrap{max-width:1080px;margin:0 auto;padding:1.5rem 1rem;}
+/* topbar */
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;}
+.logo{font-size:22px;font-weight:700;}
+.admin-btn{height:34px;padding:0 14px;border:1px solid #ccc;border-radius:7px;font-size:13px;font-weight:600;background:#fff;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.admin-btn:hover{background:#f5f5f5;}
+/* login modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.login-box{background:#fff;border-radius:14px;padding:2rem;width:100%;max-width:360px;}
+.login-box h2{font-size:18px;font-weight:700;margin-bottom:1.5rem;text-align:center;}
+.field{margin-bottom:12px;}
+.field label{font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;display:block;margin-bottom:4px;}
+.field input{width:100%;height:40px;padding:0 12px;border:1px solid #ccc;border-radius:8px;font-size:14px;}
+.field input:focus{outline:2px solid #1a1a1a;}
+/* tabs */
+.tabs{display:flex;background:#fff;border-radius:10px;padding:4px;gap:3px;margin-bottom:1.25rem;border:1px solid #e0e0e0;}
+.tab{flex:1;padding:8px 4px;font-size:12px;font-weight:600;border:none;background:transparent;color:#888;cursor:pointer;border-radius:7px;transition:all .15s;}
+.tab.active{background:#1a1a1a;color:#fff;}
+/* cards */
+.card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px;}
+.sec{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem;}
+.sc{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:.8rem 1rem;}
+.sl{font-size:11px;color:#999;margin-bottom:4px;}
+.sv{font-size:21px;font-weight:700;}
+/* tabela */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:11px;font-weight:700;color:#aaa;text-align:left;padding:9px 10px;border-bottom:2px solid #f0f0f0;background:#fafafa;white-space:nowrap;}
+.tbl td{padding:9px 10px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+.tbl tbody tr:hover td{background:#fafafa;}
+.tbl tbody tr:last-child td{border-bottom:none;}
+/* atleta */
+.av{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.av-ini{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.av-lg{width:64px;height:64px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.av-lg-ini{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0;}
+.atleta-link{cursor:pointer;color:#1a1a1a;}
+.atleta-link:hover .anome{text-decoration:underline;color:#2980b9;}
+.fem-badge{display:inline-block;background:#fce4ec;color:#ad1457;border-radius:20px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:3px;}
+.atrasado{color:#c0392b;font-weight:700;}
+.emdia{color:#219a52;font-weight:700;}
+.pts-badge{display:inline-block;background:#e8f5e9;color:#1a7a3c;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;}
+.chip{display:inline-block;background:#f0f0f0;border-radius:20px;padding:2px 9px;font-size:11px;margin:2px;line-height:1.6;}
+.chip.best{background:#fff8e1;color:#7d4e00;border:1px solid #ffe082;font-weight:700;}
+.late-badge{display:inline-block;background:#f3e5f5;color:#6a1b9a;border-radius:20px;padding:1px 6px;font-size:10px;font-weight:700;margin-right:3px;}
+.empty{text-align:center;padding:3rem;color:#bbb;font-size:13px;}
+.loading{text-align:center;padding:2rem;color:#999;font-size:13px;}
+/* perfil modal */
+.perfil-modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:860px;max-height:90vh;overflow-y:auto;}
+.perf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:8px;margin-bottom:1rem;}
+.perf-card{background:#fafafa;border:1px solid #eee;border-radius:10px;padding:.7rem .9rem;}
+.perf-label{font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.perf-val{font-size:18px;font-weight:700;}
+.perf-sub{font-size:10px;color:#999;margin-top:2px;}
+/* torneios */
+.trn-hist-card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px;}
+.trn-campeao{font-size:20px;font-weight:700;color:#c9960c;}
+/* btn */
+.btn{height:34px;padding:0 14px;border:1px solid #ccc;border-radius:7px;font-size:13px;font-weight:600;background:#fff;cursor:pointer;}
+.btn:hover{background:#f5f5f5;}
+.btn-p{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.btn-p:hover{background:#333;}
+.btn-sm{height:28px;padding:0 10px;font-size:11px;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;display:none;}
+@media(max-width:680px){.sg{grid-template-columns:repeat(2,1fr);}.perf-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <div class="logo">🎳 Ranking de Boliche</div>
+      <div style="font-size:12px;color:#666;margin-top:2px;">⏰ Prazo semanal: toda <strong>terça-feira</strong></div>
+    </div>
+    <button class="admin-btn" onclick="abrirLogin()">🔐 Admin</button>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="tab('ranking')">🏆 Classificação</button>
+    <button class="tab" onclick="tab('historico')">📅 Histórico</button>
+    <button class="tab" onclick="tab('torneios')">🎯 Torneios</button>
+  </div>
+
+  <!-- CLASSIFICAÇÃO -->
+  <div id="t-ranking">
+    <div id="sg" class="sg"></div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="tbl"><thead><tr>
+        <th style="width:40px;text-align:center;">#</th>
+        <th>Atleta</th>
+        <th title="Semanas jogadas / total">Semanas</th>
+        <th>Média</th>
+        <th title="Total de pinos acumulados">Total Pinos</th>
+        <th title="Diferença de pinos para o atleta acima">Dif. ↑</th>
+        <th title="Melhor game individual">Melhor Linha</th>
+        <th>🏆 Bônus</th>
+        <th>Pontos</th>
+      </tr></thead><tbody id="rb"><tr><td colspan="9" class="loading">⏳ Carregando...</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div id="t-historico" style="display:none;">
+    <div id="hist-list"><div class="loading">⏳ Carregando...</div></div>
+  </div>
+
+  <!-- TORNEIOS -->
+  <div id="t-torneios" style="display:none;">
+    <div id="torn-list"><div class="loading">⏳ Carregando...</div></div>
+  </div>
+
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-bg" id="modal-login" onclick="if(event.target===this)fecharLogin()">
+  <div class="login-box">
+    <h2>🔐 Acesso Admin</h2>
+    <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="admin@email.com"></div>
+    <div class="field"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+    <div id="login-msg" style="font-size:12px;color:#c0392b;margin-bottom:10px;min-height:18px;"></div>
+    <button class="btn btn-p" style="width:100%;height:42px;font-size:14px;" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- PERFIL MODAL -->
+<div class="modal-bg" id="modal-perfil" onclick="if(event.target===this)fecharPerfil()">
+  <div class="perfil-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="perfil-av-wrap"></div>
+        <div><h2 id="perfil-nome" style="font-size:17px;font-weight:700;"></h2>
+          <div id="perfil-sub" style="font-size:12px;color:#888;margin-top:3px;"></div></div>
+      </div>
+      <button class="btn btn-sm" onclick="fecharPerfil()">✕ Fechar</button>
+    </div>
+    <div id="perfil-stats" class="perf-grid"></div>
+    <div class="card" style="margin-bottom:12px;">
+      <p class="sec">Evolução da média por semana</p>
+      <div style="position:relative;height:200px;">
+        <canvas id="chart-perfil" role="img" aria-label="Evolução da média"></canvas>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr>
+          <th>Semana</th><th>Data</th><th style="text-align:center;">Coloc.</th>
+          <th>G1</th><th>G2</th><th>G3</th><th>Média</th>
+          <th>Melhor</th><th>Prazo</th><th>Pts</th>
+        </tr></thead>
+        <tbody id="perfil-hist"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ── CONFIG SUPABASE ────────────────────────────────────────────────────────
+const SB_URL  = 'https://hnjtrtelgsoavoufpwdv.supabase.co';
+const SB_KEY  = 'sb_publishable_gZa2LT5DhDqXzY2inrILNg_uQogwYtK';
+const HEADERS = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+
+async function sbGet(path, params=''){
+  const r = await fetch(SB_URL+'/rest/v1/'+path+(params?'?'+params:''),{headers:HEADERS});
+  return r.json();
+}
+
+// ── ESTADO LOCAL ──────────────────────────────────────────────────────────
+let atletas=[], rodadas=[], scores=[], cfg={pontos_pos:{},bonus_linha:10,handicap_feminino:20};
+let torneiosData=[];
+let chartPerfil=null;
+const CL=['#2980b9','#16a085','#e67e22','#8e44ad','#c0392b','#27ae60','#2c3e50','#d35400','#1abc9c','#7f8c8d','#2980b9','#16a085','#e67e22','#8e44ad','#c0392b','#27ae60','#2c3e50','#d35400','#1abc9c','#7f8c8d'];
+
+function ac(n){let h=0;for(let c of n)h=(h*31+c.charCodeAt(0))%CL.length;return CL[h];}
+function ini(n){return n.split(' ').map(w=>w[0]).join('').slice(0,2);}
+function fmtD(d){return d?new Date(d+'T12:00').toLocaleDateString('pt-BR'):'';}
+function isFem(nm){return atletas.find(a=>a.nome===nm)?.feminino||false;}
+const HCP=()=>cfg.handicap_feminino||20;
+const BONUS=()=>cfg.bonus_linha||10;
+const PP=()=>cfg.pontos_pos||{};
+
+function avEl(atleta, cls='av', iniCls='av-ini'){
+  if(atleta?.foto_url){
+    return `<img src="${atleta.foto_url}" class="${cls}" alt="${atleta.nome}">`;
+  }
+  const c=ac(atleta?.nome||'?');
+  return `<div class="${iniCls}" style="background:${c}20;color:${c};">${ini(atleta?.nome||'?')}</div>`;
+}
+
+// ── CARREGAMENTO DOS DADOS ────────────────────────────────────────────────
+async function carregarDados(){
+  try{
+    let torneiosExtra=[];
+    [atletas, rodadas, scores, torneiosData, torneiosExtra] = await Promise.all([
+      sbGet('atletas','order=nome'),
+      sbGet('rodadas','order=data'),
+      sbGet('scores','order=rodada_id'),
+      sbGet('torneios','order=data.desc'),
+      sbGet('torneios_extra','order=data'),
+    ]);
+    window._torneiosExtra = torneiosExtra||[];
+    const cfgArr = await sbGet('configuracao','id=eq.1');
+    if(cfgArr[0]) cfg=cfgArr[0];
+    renderAll();
+  } catch(e){
+    console.error(e);
+    toast('Erro ao carregar dados');
+  }
+}
+
+// ── CÁLCULO ───────────────────────────────────────────────────────────────
+function gamesAdj(nm, g1r, g2r, g3r){
+  const h=isFem(nm)?HCP():0;
+  const g1=g1r>0?g1r+h:0, g2=g2r>0?g2r+h:0, g3=g3r>0?g3r+h:0;
+  const vs=[g1,g2,g3].filter(v=>v>0);
+  return{g1,g2,g3,media:vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:0};
+}
+
+function linhaSorted(d){return[d.g1||0,d.g2||0,d.g3||0].sort((a,b)=>b-a);}
+function cmpLinha(da,db){const la=linhaSorted(da),lb=linhaSorted(db);for(let i=0;i<3;i++){if(la[i]!==lb[i])return la[i]-lb[i];}return 0;}
+
+function getBonusWinners(adjMap){
+  const en=Object.entries(adjMap).filter(([,d])=>d.media>0);
+  if(!en.length)return new Set();
+  const maxG=Math.max(...en.map(([,d])=>Math.max(d.g1||0,d.g2||0,d.g3||0)));
+  const cands=en.filter(([,d])=>Math.max(d.g1||0,d.g2||0,d.g3||0)===maxG);
+  if(cands.length===1)return new Set([cands[0][0]]);
+  cands.sort((a,b)=>cmpLinha(b[1],a[1]));
+  const win=[];
+  for(const[nm,d]of cands){if(cmpLinha(cands[0][1],d)===0)win.push(nm);else break;}
+  return new Set(win);
+}
+
+function calcSemana(rodadaId){
+  const pp=PP(), bon=BONUS();
+  const sc=scores.filter(s=>s.rodada_id===rodadaId);
+  const adjMap={};
+  sc.forEach(s=>{const a=gamesAdj(s.atleta_nome,s.g1,s.g2,s.g3);adjMap[s.atleta_nome]={...a,fp:s.fora_prazo};});
+  const np=Object.entries(adjMap).filter(([,d])=>!d.fp&&d.media>0);
+  const fp=Object.entries(adjMap).filter(([,d])=>d.fp&&d.media>0);
+  const srtM=(a,b)=>b[1].media!==a[1].media?b[1].media-a[1].media:cmpLinha(b[1],a[1])*-1;
+  np.sort(srtM);fp.sort(srtM);
+  const bonWin=getBonusWinners(adjMap);
+  const res={};
+  let pos=1,i=0;
+  while(i<np.length){
+    let j=i;while(j<np.length&&np[j][1].media===np[i][1].media)j++;
+    const ptG=pp[pos]||20;
+    for(let k=i;k<j;k++){const[nm]=np[k],b=bonWin.has(nm)?bon:0;res[nm]={pts:ptG+b,pos,b,fp:false};}
+    pos+=(j-i);i=j;
+  }
+  fp.forEach(([nm,d])=>{
+    const acima=np.filter(([,x])=>x.media>d.media).length;
+    const posG=acima+1,b=bonWin.has(nm)?bon:0;
+    res[nm]={pts:(pp[posG]||20)+b,pos:posG,b,fp:true};
+  });
+  return res;
+}
+
+function calcStats(){
+  const totalSem=rodadas.length;
+  const s={};
+  atletas.forEach(a=>{s[a.nome]={sem:0,tm:0,mg:0,mgData:'',bc:0,pts:0,tp:0,total:totalSem};});
+  rodadas.forEach(r=>{
+    const pr=calcSemana(r.id);
+    const sc=scores.filter(x=>x.rodada_id===r.id);
+    sc.forEach(x=>{
+      const adj=gamesAdj(x.atleta_nome,x.g1,x.g2,x.g3);
+      if(adj.media<=0)return;
+      if(!s[x.atleta_nome])s[x.atleta_nome]={sem:0,tm:0,mg:0,mgData:'',bc:0,pts:0,tp:0,total:totalSem};
+      const re=pr[x.atleta_nome]||{pts:20,b:0};
+      const myMax=Math.max(adj.g1,adj.g2,adj.g3);
+      s[x.atleta_nome].sem++;
+      s[x.atleta_nome].tm+=adj.media;
+      if(myMax>s[x.atleta_nome].mg){s[x.atleta_nome].mg=myMax;s[x.atleta_nome].mgData=r.data;}
+      if(re.b)s[x.atleta_nome].bc++;
+      s[x.atleta_nome].pts+=re.pts;
+      s[x.atleta_nome].tp+=(x.g1||0)+(x.g2||0)+(x.g3||0);
+    });
+  });
+  // Somar pontos de torneios extras
+  const extras = window._torneiosExtra||[];
+  extras.forEach(t=>{
+    if(t.primeiro&&s[t.primeiro]) s[t.primeiro].pts+=200;
+    if(t.segundo&&s[t.segundo])   s[t.segundo].pts+=180;
+    if(t.terceiro&&s[t.terceiro]) s[t.terceiro].pts+=160;
+  });
+  return s;
+}
+
+function getRank(){
+  const s=calcStats();
+  return atletas.map(a=>({...a,...s[a.nome],med:s[a.nome].sem>0?s[a.nome].tm/s[a.nome].sem:0}))
+    .sort((a,b)=>b.pts-a.pts||b.med-a.med);
+}
+
+// ── RENDER CLASSIFICAÇÃO ──────────────────────────────────────────────────
+function rRank(){
+  const r=getRank();
+  const totalSem=rodadas.length;
+  const ams=r.filter(x=>x.sem>0).map(x=>x.med);
+  const gm=ams.length?(ams.reduce((a,b)=>a+b,0)/ams.length).toFixed(1):'—';
+  const lider=r.find(x=>x.pts>0);
+  document.getElementById('sg').innerHTML=`
+    <div class="sc"><div class="sl">Atletas</div><div class="sv">${atletas.filter(a=>a.ativo).length}</div></div>
+    <div class="sc"><div class="sl">Semanas</div><div class="sv">${totalSem}</div></div>
+    <div class="sc"><div class="sl">Média geral</div><div class="sv">${gm}</div></div>
+    <div class="sc"><div class="sl">Líder</div><div class="sv" style="font-size:14px;">${lider?lider.nome:'—'}<br><span style="font-size:12px;color:#999;font-weight:400;">${lider?lider.pts:'—'} pts</span></div></div>`;
+
+  document.getElementById('rb').innerHTML=r.map((j,i)=>{
+    const c=ac(j.nome);
+    const pi=i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="color:#bbb;font-weight:700;">${i+1}</span>`;
+    const fem=j.feminino?'<span class="fem-badge">♀</span>':'';
+    const atrasado=totalSem>0&&j.sem<totalSem;
+    const semXY=`<span class="${atrasado?'atrasado':'emdia'}">${j.sem}/${totalSem}</span>`;
+    const dif=i===0?'<span style="color:#bbb;">—</span>':`<span style="color:#c0392b;font-weight:700;">-${(r[i-1].tp||0)-(j.tp||0)}</span>`;
+    const mlinha=j.mg>0?`<span style="font-weight:700;">${j.mg}</span>${j.mgData?`<span style="font-size:10px;color:#999;margin-left:4px;">${fmtD(j.mgData)}</span>`:''}` :'—';
+    const av=j.foto_url?`<img src="${j.foto_url}" class="av">`:`<div class="av-ini" style="background:${c}20;color:${c};">${ini(j.nome)}</div>`;
+    return`<tr>
+      <td style="text-align:center;font-size:15px;">${pi}</td>
+      <td><div class="atleta-link" onclick="abrirPerfil('${j.nome}')">
+        <div style="display:flex;align-items:center;gap:7px;">${av}
+          <span><span class="anome" style="font-weight:${i<3?700:400};">${j.nome}</span>${fem}</span>
+        </div></div></td>
+      <td>${semXY}</td>
+      <td style="font-weight:600;">${j.med.toFixed(1)}</td>
+      <td style="font-weight:600;color:#2c3e50;">${j.tp||0}</td>
+      <td style="text-align:center;font-size:12px;">${dif}</td>
+      <td>${mlinha}</td>
+      <td style="text-align:center;">${j.bc?`<span class="pts-badge">+${BONUS()}×${j.bc}</span>`:'—'}</td>
+      <td><strong style="font-size:15px;">${j.pts}</strong></td></tr>`;
+  }).join('');
+}
+
+// ── RENDER HISTÓRICO ──────────────────────────────────────────────────────
+function rHistorico(){
+  const el=document.getElementById('hist-list');
+  if(!rodadas.length){el.innerHTML='<div class="empty">📭 Nenhuma semana registrada.</div>';return;}
+  const sorted=[...rodadas].sort((a,b)=>b.data.localeCompare(a.data));
+  el.innerHTML=sorted.map(r=>{
+    const pr=calcSemana(r.id);
+    const sc=scores.filter(x=>x.rodada_id===r.id);
+    const adjArr=sc.map(x=>({nm:x.atleta_nome,...gamesAdj(x.atleta_nome,x.g1,x.g2,x.g3),fp:x.fora_prazo,g1r:x.g1||0,g2r:x.g2||0,g3r:x.g3||0}))
+      .filter(x=>x.media>0)
+      .sort((a,b)=>(pr[a.nm]?.pos||99)-(pr[b.nm]?.pos||99)||b.media-a.media);
+    const chips=adjArr.map(x=>{
+      const re=pr[x.nm]||{pts:20,b:0};
+      const tot=x.g1r+x.g2r+x.g3r;
+      return`<span class="chip${re.b?' best':''}">${x.fp?'<span class="late-badge">fora prazo</span>':''}<strong>${x.nm}</strong>: ${tot} (${x.media.toFixed(1)}) — <strong>${re.pts}pts</strong></span>`;
+    }).join('');
+    const totalPinos=adjArr.reduce((a,x)=>a+x.g1r+x.g2r+x.g3r,0);
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+        <div><strong style="font-size:15px;">${r.semana}</strong>
+          <span style="font-size:11px;color:#999;margin-left:8px;">${fmtD(r.data)}</span>
+          <span style="font-size:11px;color:#888;margin-left:8px;">${adjArr.length} atletas</span>
+        </div>
+      </div>
+      <div>${chips}</div>
+      <div style="background:#f0f7ff;border:1px solid #b3d4f5;border-radius:8px;padding:7px 12px;font-size:12px;margin-top:8px;">
+        Total do dia: <b>${totalPinos}</b> pinos &nbsp;|&nbsp; Atletas: <b>${adjArr.length}</b> &nbsp;|&nbsp; Média geral: <b>${adjArr.length?((totalPinos/adjArr.length)/3).toFixed(1):'—'}</b>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER TORNEIOS ───────────────────────────────────────────────────────
+function rTorneios(){
+  const el=document.getElementById('torn-list');
+  if(!torneiosData.length){el.innerHTML='<div class="empty">📭 Nenhum torneio registrado ainda.</div>';return;}
+  el.innerHTML=torneiosData.map(t=>{
+    const fi={'F1':'Classificatória + Mata-mata','F2':'Só Mata-mata'}[t.formato]||t.formato;
+    const modo={'1game':'1 Game','melhor3':'Melhor de 3','media2':'Média de 2','soma2':'Soma de 2'}[t.modo_mata_mata]||'';
+    const partic=(t.participantes||[]).join(', ');
+    return`<div class="trn-hist-card">
+      <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:36px;line-height:1;">🏆</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:16px;">${t.nome}</div>
+          <div style="font-size:11px;color:#999;margin-top:2px;">${fmtD(t.data)} · ${fi} · ${modo}</div>
+          <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+            <span style="font-size:13px;">Campeão:</span>
+            <span class="trn-campeao">${t.campeao||'—'}</span>
+          </div>
+          <div style="margin-top:6px;font-size:12px;color:#888;">${(t.participantes||[]).length} atletas: ${partic}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── PERFIL ────────────────────────────────────────────────────────────────
+function abrirPerfil(nome){
+  const at=atletas.find(a=>a.nome===nome);
+  const c=ac(nome);
+  const avWrap=at?.foto_url
+    ?`<img src="${at.foto_url}" class="av-lg">`
+    :`<div class="av-lg-ini" style="background:${c}20;color:${c};">${ini(nome)}</div>`;
+  document.getElementById('perfil-av-wrap').innerHTML=avWrap;
+  document.getElementById('perfil-nome').innerHTML=nome+(at?.feminino?` <span class="fem-badge">♀ +${HCP()} handicap</span>`:'');
+  const totalSem=rodadas.length;
+
+  const hist=[];
+  rodadas.forEach(r=>{
+    const sc=scores.find(x=>x.rodada_id===r.id&&x.atleta_nome===nome);
+    if(!sc)return;
+    const adj=gamesAdj(nome,sc.g1,sc.g2,sc.g3);
+    if(adj.media<=0)return;
+    const pr=calcSemana(r.id);
+    const re=pr[nome]||{pts:20,b:0,pos:'-'};
+    hist.push({semana:r.semana,data:r.data,fp:sc.fora_prazo,pts:re.pts,bon:re.b,pos:re.pos,
+      g1:sc.g1||0,g2:sc.g2||0,g3:sc.g3||0,
+      g1adj:adj.g1,g2adj:adj.g2,g3adj:adj.g3,media:adj.media});
+  });
+
+  const atrasado=totalSem>0&&hist.length<totalSem;
+  document.getElementById('perfil-sub').innerHTML=
+    `<span class="${atrasado?'atrasado':'emdia'}">${hist.length}/${totalSem} semanas jogadas</span>`+
+    (atrasado?` <span style="color:#c0392b;font-size:11px;">(${totalSem-hist.length} em atraso)</span>`:'');
+
+  if(!hist.length){
+    document.getElementById('perfil-stats').innerHTML='<div class="empty">Nenhum dado.</div>';
+    document.getElementById('perfil-hist').innerHTML='';
+    abrirModal();return;
+  }
+
+  const allGames=hist.flatMap(h=>[h.g1adj,h.g2adj,h.g3adj].filter(v=>v>0));
+  const melhorGame=Math.max(...allGames), piorGame=Math.min(...allGames);
+  const medias=hist.map(h=>h.media);
+  const melhorMedia=Math.max(...medias), piorMedia=Math.min(...medias);
+  const hMG=hist.find(h=>Math.max(h.g1adj,h.g2adj,h.g3adj)===melhorGame);
+  const hPG=hist.find(h=>[h.g1adj,h.g2adj,h.g3adj].filter(v=>v>0).includes(piorGame));
+  const hMM=hist.find(h=>h.media===melhorMedia);
+  const totalPts=hist.reduce((a,h)=>a+h.pts,0);
+  const bonusTotal=hist.filter(h=>h.bon>0).length;
+  const mediaGeral=medias.reduce((a,b)=>a+b,0)/medias.length;
+  const posicoes=hist.map(h=>h.pos).filter(p=>typeof p==='number');
+  const melhorPos=posicoes.length?Math.min(...posicoes):null;
+  const piorPos=posicoes.length?Math.max(...posicoes):null;
+  const hMP=hist.find(h=>h.pos===melhorPos);
+
+  document.getElementById('perfil-stats').innerHTML=`
+    <div class="perf-card"><div class="perf-label">Média geral</div><div class="perf-val">${mediaGeral.toFixed(1)}</div></div>
+    <div class="perf-card"><div class="perf-label">Melhor game</div><div class="perf-val" style="color:#219a52;">${melhorGame}</div><div class="perf-sub">${hMG?hMG.semana+' · '+fmtD(hMG.data):''}</div></div>
+    <div class="perf-card"><div class="perf-label">Pior game</div><div class="perf-val" style="color:#c0392b;">${piorGame}</div><div class="perf-sub">${hPG?hPG.semana+' · '+fmtD(hPG.data):''}</div></div>
+    <div class="perf-card"><div class="perf-label">Melhor média</div><div class="perf-val">${melhorMedia.toFixed(1)}</div><div class="perf-sub">${hMM?hMM.semana:''}</div></div>
+    <div class="perf-card"><div class="perf-label">Pior média</div><div class="perf-val">${piorMedia.toFixed(1)}</div></div>
+    <div class="perf-card"><div class="perf-label">🥇 Melhor coloc.</div><div class="perf-val" style="color:#219a52;">${melhorPos!==null?melhorPos+'º':'—'}</div><div class="perf-sub">${hMP?hMP.semana:''}</div></div>
+    <div class="perf-card"><div class="perf-label">📉 Pior coloc.</div><div class="perf-val" style="color:#c0392b;">${piorPos!==null?piorPos+'º':'—'}</div></div>
+    <div class="perf-card"><div class="perf-label">Total pontos</div><div class="perf-val">${totalPts}</div></div>
+    <div class="perf-card"><div class="perf-label">🏆 Melhor linha</div><div class="perf-val">${bonusTotal}x</div></div>
+    <div class="perf-card"><div class="perf-label">Semanas</div><div class="perf-val">${hist.length}/${totalSem}</div></div>`;
+
+  document.getElementById('perfil-hist').innerHTML=hist.map(h=>{
+    const myMaxAdj=Math.max(h.g1adj,h.g2adj,h.g3adj); // ajustado (para ranking)
+    const posIcon=h.pos===1?'🥇':h.pos===2?'🥈':h.pos===3?'🥉':`${h.pos}º`;
+    const femNote=isFem(nome)?' <span style="font-size:9px;color:#ad1457;">(+'+HCP()+')</span>':'';
+    return`<tr>
+      <td>${h.semana}</td><td style="color:#999;">${fmtD(h.data)}</td>
+      <td style="text-align:center;font-size:15px;">${posIcon}</td>
+      <td style="text-align:center;">${h.g1}${femNote}</td>
+      <td style="text-align:center;">${h.g2}${femNote}</td>
+      <td style="text-align:center;">${h.g3}${femNote}</td>
+      <td style="font-weight:700;text-align:center;">${h.media.toFixed(1)}</td>
+      <td style="text-align:center;font-weight:700;color:${myMaxAdj===melhorGame?'#219a52':'#1a1a1a'};">${myMaxAdj}${myMaxAdj===melhorGame?' 🏆':''}</td>
+      <td style="text-align:center;">${h.fp?'<span class="late-badge">fora</span>':'✅'}</td>
+      <td style="text-align:center;font-weight:700;">${h.pts}${h.bon?`<span style="color:#219a52;font-size:10px;"> +${BONUS()}</span>`:''}</td>
+    </tr>`;
+  }).join('');
+
+  if(chartPerfil){chartPerfil.destroy();chartPerfil=null;}
+  const ctx=document.getElementById('chart-perfil').getContext('2d');
+  chartPerfil=new Chart(ctx,{type:'line',
+    data:{labels:hist.map(h=>h.semana.replace('Semana','Sem.')),
+      datasets:[{label:'Média',data:hist.map(h=>+h.media.toFixed(1)),
+        borderColor:'#2980b9',backgroundColor:'#2980b920',borderWidth:2,
+        pointRadius:5,pointBackgroundColor:'#2980b9',fill:true,tension:.3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:false,ticks:{font:{size:11}}},x:{ticks:{font:{size:11}}}}}});
+  abrirModal();
+}
+
+function abrirModal(){document.getElementById('modal-perfil').classList.add('open');document.body.style.overflow='hidden';}
+function fecharPerfil(){document.getElementById('modal-perfil').classList.remove('open');document.body.style.overflow='';}
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────
+function abrirLogin(){document.getElementById('modal-login').classList.add('open');}
+function fecharLogin(){document.getElementById('modal-login').classList.remove('open');document.getElementById('login-msg').textContent='';}
+
+async function fazerLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  const msg=document.getElementById('login-msg');
+  if(!email||!senha){msg.textContent='⚠ Preencha email e senha.';return;}
+  msg.textContent='Entrando...';
+  try{
+    const r=await fetch(SB_URL+'/auth/v1/token?grant_type=password',{
+      method:'POST',headers:{...HEADERS,'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:senha})
+    });
+    const d=await r.json();
+    if(d.access_token){
+      // Redirecionar para admin com token
+      localStorage.setItem('sb_token',d.access_token);
+      window.location.href='admin.html';
+    } else {
+      msg.textContent='❌ Email ou senha incorretos.';
+    }
+  }catch(e){msg.textContent='❌ Erro de conexão.';}
+}
+
+// ── NAVEGAÇÃO ─────────────────────────────────────────────────────────────
+function tab(t){
+  ['ranking','historico','torneios'].forEach(id=>{document.getElementById('t-'+id).style.display=id===t?'':'none';});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['ranking','historico','torneios'][i]===t);});
+  if(t==='historico')rHistorico();
+  else if(t==='torneios')rTorneios();
+}
+
+function renderAll(){rRank();if(document.getElementById('t-historico').style.display!=='none')rHistorico();}
+
+function toast(msg,dur=2500){
+  const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';
+  setTimeout(()=>el.style.display='none',dur);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+carregarDados();
+// Atualizar a cada 60 segundos
+setInterval(carregarDados,60000);
+</script>
+</body>
+</html>
