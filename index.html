@@ -72,7 +72,9 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
 .btn-p:hover{background:#333;}
 .btn-sm{height:28px;padding:0 10px;font-size:11px;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;display:none;}
-@media(max-width:680px){.sg{grid-template-columns:repeat(2,1fr);}.perf-grid{grid-template-columns:repeat(2,1fr);}}
+.hide-mobile{}
+@media(max-width:680px){
+  .hide-mobile{display:none !important;}.sg{grid-template-columns:repeat(2,1fr);}.perf-grid{grid-template-columns:repeat(2,1fr);}}
 </style>
 </head>
 <body>
@@ -101,12 +103,12 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
       <table class="tbl"><thead><tr>
         <th style="width:40px;text-align:center;">#</th>
         <th>Atleta</th>
-        <th title="Semanas jogadas / total">Semanas</th>
+        <th title="Semanas jogadas / total">Sem.</th>
         <th>Média</th>
-        <th title="Total de pinos acumulados">Total Pinos</th>
-        <th title="Diferença de pinos para o atleta acima">Dif. ↑</th>
-        <th title="Melhor game individual">Melhor Linha</th>
-        <th>🏆 Bônus</th>
+        <th class="hide-mobile" title="Total de pinos acumulados">Total Pinos</th>
+        <th class="hide-mobile" title="Diferença de pinos para o atleta acima">Dif. ↑</th>
+        <th class="hide-mobile" title="Melhor game individual">Melhor Linha</th>
+        <th class="hide-mobile">🏆 Bônus</th>
         <th>Pontos</th>
       </tr></thead><tbody id="rb"><tr><td colspan="9" class="loading">⏳ Carregando...</td></tr></tbody></table>
     </div>
@@ -339,10 +341,10 @@ function rRank(){
         </div></div></td>
       <td>${semXY}</td>
       <td style="font-weight:600;">${j.med.toFixed(1)}</td>
-      <td style="font-weight:600;color:#2c3e50;">${j.tp||0}</td>
-      <td style="text-align:center;font-size:12px;">${dif}</td>
-      <td>${mlinha}</td>
-      <td style="text-align:center;">${j.bc?`<span class="pts-badge">+${BONUS()}×${j.bc}</span>`:'—'}</td>
+      <td class="hide-mobile" style="font-weight:600;color:#2c3e50;">${j.tp||0}</td>
+      <td class="hide-mobile" style="text-align:center;font-size:12px;">${dif}</td>
+      <td class="hide-mobile">${mlinha}</td>
+      <td class="hide-mobile" style="text-align:center;">${j.bc?`<span class="pts-badge">+${BONUS()}×${j.bc}</span>`:'—'}</td>
       <td><strong style="font-size:15px;">${j.pts}</strong></td></tr>`;
   }).join('');
 }
