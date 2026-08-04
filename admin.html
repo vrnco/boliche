@@ -349,10 +349,24 @@ async function verificarAuth(){
     const r=await fetch(SB_URL+'/auth/v1/user',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+AUTH_TOKEN}});
     if(r.status!==200){sair();return;}
     const u=await r.json();
-    document.getElementById('admin-email-label').textContent='Logado como: '+u.email;
+    document.getElementById('admin-email-label').textContent='✓ Logado como: '+u.email;
   }catch{sair();}
 }
-function sair(){localStorage.removeItem('sb_token');window.location.href='index.html';}
+function sair(){
+  const token=localStorage.getItem('sb_token');
+  if(token){
+    fetch(SB_URL+'/auth/v1/logout',{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+token}
+    }).finally(()=>{
+      localStorage.removeItem('sb_token');
+      window.location.href='https://vrnco.github.io/boliche/';
+    });
+  } else {
+    localStorage.removeItem('sb_token');
+    window.location.href='https://vrnco.github.io/boliche/';
+  }
+}
 
 // ── ESTADO ────────────────────────────────────────────────────────────────
 let atletas=[], rodadas=[], scores=[], cfg={pontos_pos:{},bonus_linha:10,handicap_feminino:20};

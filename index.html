@@ -13,6 +13,10 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
 .logo{font-size:22px;font-weight:700;}
 .admin-btn{height:34px;padding:0 14px;border:1px solid #ccc;border-radius:7px;font-size:13px;font-weight:600;background:#fff;cursor:pointer;display:flex;align-items:center;gap:6px;}
 .admin-btn:hover{background:#f5f5f5;}
+.admin-btn-logado{height:34px;padding:0 14px;border:1px solid #1a1a1a;border-radius:7px;font-size:13px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px;text-decoration:none;}
+.admin-btn-logado:hover{background:#333;}
+.admin-user-bar{display:flex;align-items:center;gap:8px;}
+.admin-badge{background:#e8f5e9;color:#1a7a3c;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;}
 /* login modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
@@ -102,7 +106,7 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
       <div class="logo">🎳 Ranking de Boliche</div>
       <div style="font-size:12px;color:#666;margin-top:2px;">⏰ Prazo semanal: toda <strong>terça-feira</strong></div>
     </div>
-    <button class="admin-btn" onclick="abrirLogin()">🔐 Admin</button>
+    <div id="admin-btn-wrap"></div>
   </div>
 
   <!-- TABS -->
@@ -541,9 +545,10 @@ async function fazerLogin(){
     });
     const d=await r.json();
     if(d.access_token){
-      // Redirecionar para admin com token
       localStorage.setItem('sb_token',d.access_token);
-      window.location.href='admin.html';
+      fecharLogin();
+      renderAdminBtn();
+      toast('✓ Logado com sucesso!');
     } else {
       msg.textContent='❌ Email ou senha incorretos.';
     }
@@ -832,7 +837,58 @@ function abrirPerfilSemestre(nome, semId){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────
+
+function renderAdminBtn(){
+  const token = localStorage.getItem('sb_token');
+  const wrap = document.getElementById('admin-btn-wrap');
+  if(!wrap) return;
+
+  if(token){
+    // Verificar se o token ainda é válido
+    fetch(SB_URL+'/auth/v1/user',{
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+token}
+    }).then(r=>{
+      if(r.ok){
+        r.json().then(u=>{
+          wrap.innerHTML=`
+            <div class="admin-user-bar">
+              <span class="admin-badge">⚙️ Admin: ${u.email}</span>
+              <a href="admin.html" class="admin-btn-logado">⚙️ Painel Admin</a>
+              <button class="admin-btn" onclick="fazerLogout()" style="font-size:11px;height:28px;padding:0 10px;">Sair</button>
+            </div>`;
+        });
+      } else {
+        // Token expirado
+        localStorage.removeItem('sb_token');
+        wrap.innerHTML=`<button class="admin-btn" onclick="abrirLogin()">🔐 Admin</button>`;
+      }
+    }).catch(()=>{
+      wrap.innerHTML=`<button class="admin-btn" onclick="abrirLogin()">🔐 Admin</button>`;
+    });
+  } else {
+    wrap.innerHTML=`<button class="admin-btn" onclick="abrirLogin()">🔐 Admin</button>`;
+  }
+}
+
+function fazerLogout(){
+  const token = localStorage.getItem('sb_token');
+  if(token){
+    fetch(SB_URL+'/auth/v1/logout',{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+token}
+    }).finally(()=>{
+      localStorage.removeItem('sb_token');
+      renderAdminBtn();
+      toast('Sessão encerrada.');
+    });
+  } else {
+    localStorage.removeItem('sb_token');
+    renderAdminBtn();
+  }
+}
+
 carregarDados();
+renderAdminBtn();
 // Atualizar a cada 60 segundos
 setInterval(carregarDados,60000);
 </script>
