@@ -73,6 +73,22 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
 .btn-sm{height:28px;padding:0 10px;font-size:11px;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;display:none;}
 .hide-mobile{}
+.sem-card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;margin-bottom:12px;overflow:hidden;}
+.sem-header{padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;flex-wrap:wrap;gap:8px;}
+.sem-header:hover{background:#fafafa;}
+.sem-body{display:none;padding:0 1.25rem 1.25rem;}
+.sem-body.open{display:block;}
+.podio{display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap;}
+.podio-card{flex:1;min-width:120px;border-radius:10px;padding:.75rem 1rem;text-align:center;}
+.podio-1{background:#fff8e1;border:1px solid #ffe082;}
+.podio-2{background:#f5f5f5;border:1px solid #ddd;}
+.podio-3{background:#fdf0e8;border:1px solid #f0c8a0;}
+.podio-pos{font-size:24px;}
+.podio-nome{font-size:13px;font-weight:700;margin-top:4px;}
+.podio-pts{font-size:12px;color:#888;margin-top:2px;}
+.atleta-row-camp{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;}
+.atleta-row-camp:hover{background:#fafafa;}
+.atleta-row-camp:last-child{border-bottom:none;}
 @media(max-width:680px){
   .hide-mobile{display:none !important;}.sg{grid-template-columns:repeat(2,1fr);}.perf-grid{grid-template-columns:repeat(2,1fr);}}
 </style>
@@ -94,6 +110,7 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
     <button class="tab active" onclick="tab('ranking')">🏆 Classificação</button>
     <button class="tab" onclick="tab('historico')">📅 Histórico</button>
     <button class="tab" onclick="tab('torneios')">🎯 Torneios</button>
+    <button class="tab" onclick="tab('campeonatos')">🎖️ Campeonatos</button>
   </div>
 
   <!-- CLASSIFICAÇÃO -->
@@ -124,6 +141,11 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
     <div id="torn-list"><div class="loading">⏳ Carregando...</div></div>
   </div>
 
+</div>
+
+<!-- CAMPEONATOS -->
+<div id="t-campeonatos" style="display:none;">
+  <div id="camp-list"><div class="loading">⏳ Carregando...</div></div>
 </div>
 
 <!-- LOGIN MODAL -->
@@ -207,15 +229,17 @@ function avEl(atleta, cls='av', iniCls='av-ini'){
 // ── CARREGAMENTO DOS DADOS ────────────────────────────────────────────────
 async function carregarDados(){
   try{
-    let torneiosExtra=[];
-    [atletas, rodadas, scores, torneiosData, torneiosExtra] = await Promise.all([
+    let torneiosExtra=[], semestres=[];
+    [atletas, rodadas, scores, torneiosData, torneiosExtra, semestres] = await Promise.all([
       sbGet('atletas','order=nome'),
       sbGet('rodadas','order=data'),
       sbGet('scores','order=rodada_id'),
       sbGet('torneios','order=data.desc'),
       sbGet('torneios_extra','order=data'),
+      sbGet('semestres','order=ano,numero'),
     ]);
     window._torneiosExtra = torneiosExtra||[];
+    window._semestres = semestres||[];
     const cfgArr = await sbGet('configuracao','id=eq.1');
     if(cfgArr[0]) cfg=cfgArr[0];
     renderAll();
@@ -528,10 +552,11 @@ async function fazerLogin(){
 
 // ── NAVEGAÇÃO ─────────────────────────────────────────────────────────────
 function tab(t){
-  ['ranking','historico','torneios'].forEach(id=>{document.getElementById('t-'+id).style.display=id===t?'':'none';});
-  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['ranking','historico','torneios'][i]===t);});
+  ['ranking','historico','torneios','campeonatos'].forEach(id=>{document.getElementById('t-'+id).style.display=id===t?'':'none';});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['ranking','historico','torneios','campeonatos'][i]===t);});
   if(t==='historico')rHistorico();
   else if(t==='torneios')rTorneios();
+  else if(t==='campeonatos')rCampeonatos();
 }
 
 function renderAll(){rRank();if(document.getElementById('t-historico').style.display!=='none')rHistorico();}
@@ -539,6 +564,271 @@ function renderAll(){rRank();if(document.getElementById('t-historico').style.dis
 function toast(msg,dur=2500){
   const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';
   setTimeout(()=>el.style.display='none',dur);
+}
+
+// ══════════════════════════════════════════════════════
+// CAMPEONATOS
+// ══════════════════════════════════════════════════════
+
+function calcStatsSemestre(semId){
+  const semRodadas = rodadas.filter(r=>r.semestre_id===semId);
+  const semScores  = scores.filter(s=>semRodadas.find(r=>r.id===s.rodada_id));
+  const semExtras  = (window._torneiosExtra||[]).filter(t=>t.semestre_id===semId);
+  const totalSem   = semRodadas.length;
+  const s={};
+  atletas.forEach(a=>{s[a.nome]={sem:0,tm:0,mg:0,mgData:'',bc:0,pts:0,tp:0,total:totalSem};});
+
+  semRodadas.forEach(r=>{
+    const pr = calcSemanaId(r.id, semScores);
+    semScores.filter(x=>x.rodada_id===r.id).forEach(x=>{
+      const adj=gamesAdj(x.atleta_nome,x.g1,x.g2,x.g3);
+      if(adj.media<=0)return;
+      if(!s[x.atleta_nome])s[x.atleta_nome]={sem:0,tm:0,mg:0,mgData:'',bc:0,pts:0,tp:0,total:totalSem};
+      const re=pr[x.atleta_nome]||{pts:20,b:0};
+      const myMax=Math.max(adj.g1,adj.g2,adj.g3);
+      s[x.atleta_nome].sem++;
+      s[x.atleta_nome].tm+=adj.media;
+      if(myMax>s[x.atleta_nome].mg){s[x.atleta_nome].mg=myMax;s[x.atleta_nome].mgData=r.data;}
+      if(re.b)s[x.atleta_nome].bc++;
+      s[x.atleta_nome].pts+=re.pts;
+      s[x.atleta_nome].tp+=(x.g1||0)+(x.g2||0)+(x.g3||0);
+    });
+  });
+
+  // Somar torneios extras do semestre
+  semExtras.forEach(t=>{
+    if(t.primeiro&&s[t.primeiro])s[t.primeiro].pts+=200;
+    if(t.segundo&&s[t.segundo])  s[t.segundo].pts+=180;
+    if(t.terceiro&&s[t.terceiro])s[t.terceiro].pts+=160;
+  });
+
+  return {stats:s, totalSem, semRodadas, semScores};
+}
+
+// Versão de calcSemana filtrada por scoreList específico
+function calcSemanaId(rodadaId, semScores){
+  const pp=PP(), bon=BONUS();
+  const sc=semScores.filter(s=>s.rodada_id===rodadaId);
+  const adjMap={};
+  sc.forEach(s=>{const a=gamesAdj(s.atleta_nome,s.g1,s.g2,s.g3);adjMap[s.atleta_nome]={...a,fp:s.fora_prazo};});
+  const np=Object.entries(adjMap).filter(([,d])=>!d.fp&&d.media>0);
+  const fp=Object.entries(adjMap).filter(([,d])=>d.fp&&d.media>0);
+  const srtM=(a,b)=>b[1].media!==a[1].media?b[1].media-a[1].media:cmpLinha(b[1],a[1])*-1;
+  np.sort(srtM);fp.sort(srtM);
+  const bonWin=getBonusWinners(adjMap);
+  const res={};
+  let pos=1,i=0;
+  while(i<np.length){
+    let j=i;while(j<np.length&&np[j][1].media===np[i][1].media)j++;
+    const ptG=pp[pos]||20;
+    for(let k=i;k<j;k++){const[nm]=np[k],b=bonWin.has(nm)?bon:0;res[nm]={pts:ptG+b,pos,b,fp:false};}
+    pos+=(j-i);i=j;
+  }
+  fp.forEach(([nm,d])=>{
+    const acima=np.filter(([,x])=>x.media>d.media).length;
+    const posG=acima+1,b=bonWin.has(nm)?bon:0;
+    res[nm]={pts:(pp[posG]||20)+b,pos:posG,b,fp:true};
+  });
+  return res;
+}
+
+function getRankSemestre(semId){
+  const {stats} = calcStatsSemestre(semId);
+  return atletas
+    .map(a=>({...a,...stats[a.nome],med:stats[a.nome].sem>0?stats[a.nome].tm/stats[a.nome].sem:0}))
+    .sort((a,b)=>b.pts-a.pts||b.med-a.med);
+}
+
+function rCampeonatos(){
+  const el=document.getElementById('camp-list');
+  const sems=window._semestres||[];
+  if(!sems.length){el.innerHTML='<div class="empty">📭 Nenhum semestre registrado ainda.</div>';return;}
+
+  // Agrupar por ano
+  const porAno={};
+  sems.forEach(s=>{
+    if(!porAno[s.ano])porAno[s.ano]=[];
+    porAno[s.ano].push(s);
+  });
+
+  el.innerHTML=Object.entries(porAno).sort((a,b)=>b[0]-a[0]).map(([ano,lista])=>`
+    <div style="margin-bottom:24px;">
+      <div style="font-size:16px;font-weight:700;color:#555;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+        🗓️ ${ano}
+      </div>
+      ${lista.map(sem=>htmlSemestreCard(sem)).join('')}
+    </div>`).join('');
+}
+
+function htmlSemestreCard(sem){
+  const rank=getRankSemestre(sem.id);
+  const top3=rank.filter(j=>j.pts>0).slice(0,3);
+  const podioColors=['podio-1','podio-2','podio-3'];
+  const podioEmoji=['🥇','🥈','🥉'];
+  const encBadge=sem.encerrado
+    ?'<span style="background:#e8f5e9;color:#219a52;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;">✓ Encerrado</span>'
+    :'<span style="background:#fff8e1;color:#c9960c;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;">● Em andamento</span>';
+
+  const podioHTML=top3.map((j,i)=>{
+    const c=ac(j.nome);
+    const av=j.foto_url?`<img src="${j.foto_url}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;margin:4px auto;display:block;">`
+      :`<div style="width:40px;height:40px;border-radius:50%;background:${c}20;color:${c};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;margin:4px auto;">${ini(j.nome)}</div>`;
+    return`<div class="${podioColors[i]} podio-card">
+      <div class="podio-pos">${podioEmoji[i]}</div>
+      ${av}
+      <div class="podio-nome">${j.nome}</div>
+      <div class="podio-pts">${j.pts} pts</div>
+    </div>`;
+  }).join('');
+
+  return`<div class="sem-card">
+    <div class="sem-header" onclick="toggleSem('${sem.id}')">
+      <div>
+        <strong style="font-size:16px;">${sem.nome}</strong>
+        <div style="font-size:11px;color:#999;margin-top:3px;">
+          ${fmtD(sem.data_inicio)}${sem.data_fim?' → '+fmtD(sem.data_fim):''}
+          &nbsp;·&nbsp; ${rodadas.filter(r=>r.semestre_id===sem.id).length} semanas
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${encBadge}
+        <span id="arrow-${sem.id}" style="font-size:18px;color:#bbb;">▼</span>
+      </div>
+    </div>
+    <div class="sem-body" id="body-${sem.id}">
+      ${top3.length?`<div class="podio" style="margin-top:0;">${podioHTML}</div>`:''}
+      <div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Classificação Geral</div>
+      <div id="rank-${sem.id}">
+        ${htmlRankSemestre(rank, sem.id)}
+      </div>
+    </div>
+  </div>`;
+}
+
+function htmlRankSemestre(rank, semId){
+  const totalSem=rodadas.filter(r=>r.semestre_id===semId).length;
+  return rank.filter(j=>j.pts>0||j.sem>0).map((j,i)=>{
+    const c=ac(j.nome);
+    const av=j.foto_url?`<img src="${j.foto_url}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">`
+      :`<div class="av-ini" style="background:${c}20;color:${c};width:28px;height:28px;">${ini(j.nome)}</div>`;
+    const pi=i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="color:#bbb;font-weight:700;font-size:12px;">${i+1}</span>`;
+    const fem=j.feminino?'<span class="fem-badge">♀</span>':'';
+    const atrasado=j.sem<totalSem;
+    return`<div class="atleta-row-camp" onclick="abrirPerfilSemestre('${j.nome}','${semId}')">
+      <div style="width:28px;text-align:center;font-size:14px;">${pi}</div>
+      ${av}
+      <div style="flex:1;font-size:13px;font-weight:${i<3?700:400};">${j.nome}${fem}</div>
+      <div style="font-size:11px;color:${atrasado?'#c0392b':'#219a52'};">${j.sem}/${totalSem}</div>
+      <div style="font-size:13px;font-weight:600;color:#555;margin:0 8px;">${j.med.toFixed(1)}</div>
+      <div style="font-size:15px;font-weight:700;min-width:48px;text-align:right;">${j.pts}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSem(id){
+  const body=document.getElementById('body-'+id);
+  const arrow=document.getElementById('arrow-'+id);
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  if(arrow)arrow.textContent=isOpen?'▼':'▲';
+}
+
+// ── PERFIL DO ATLETA POR SEMESTRE ─────────────────────────────────────────
+function abrirPerfilSemestre(nome, semId){
+  const sem = (window._semestres||[]).find(s=>s.id===semId);
+  const {semRodadas, semScores} = calcStatsSemestre(semId);
+  const at = atletas.find(a=>a.nome===nome);
+  const c = ac(nome);
+
+  const avWrap = at?.foto_url
+    ?`<img src="${at.foto_url}" class="av-lg">`
+    :`<div class="av-lg-ini" style="background:${c}20;color:${c};">${ini(nome)}</div>`;
+  document.getElementById('perfil-av-wrap').innerHTML=avWrap;
+  document.getElementById('perfil-nome').innerHTML=
+    nome+(at?.feminino?` <span class="fem-badge">♀ +${HCP()} handicap</span>`:'')+
+    `<span style="font-size:12px;color:#888;font-weight:400;margin-left:8px;">— ${sem?.nome||''}</span>`;
+
+  const totalSem=semRodadas.length;
+  const hist=[];
+  semRodadas.forEach(r=>{
+    const sc=semScores.find(x=>x.rodada_id===r.id&&x.atleta_nome===nome);
+    if(!sc)return;
+    const adj=gamesAdj(nome,sc.g1,sc.g2,sc.g3);
+    if(adj.media<=0)return;
+    const pr=calcSemanaId(r.id,semScores);
+    const re=pr[nome]||{pts:20,b:0,pos:'-'};
+    hist.push({
+      semana:r.semana, data:r.data, fp:sc.fora_prazo, pts:re.pts, bon:re.b, pos:re.pos,
+      g1:sc.g1||0, g2:sc.g2||0, g3:sc.g3||0,
+      g1adj:adj.g1, g2adj:adj.g2, g3adj:adj.g3, media:adj.media
+    });
+  });
+
+  document.getElementById('perfil-sub').innerHTML=
+    `<span class="${hist.length<totalSem?'atrasado':'emdia'}">${hist.length}/${totalSem} semanas</span>` +
+    ` — ${sem?.nome||''}`;
+
+  if(!hist.length){
+    document.getElementById('perfil-stats').innerHTML='<div class="empty">Nenhum dado neste semestre.</div>';
+    document.getElementById('perfil-hist').innerHTML='';
+    abrirModal();return;
+  }
+
+  const allGames=hist.flatMap(h=>[h.g1adj,h.g2adj,h.g3adj].filter(v=>v>0));
+  const melhorGame=Math.max(...allGames), piorGame=Math.min(...allGames);
+  const medias=hist.map(h=>h.media);
+  const melhorMedia=Math.max(...medias), piorMedia=Math.min(...medias);
+  const hMG=hist.find(h=>Math.max(h.g1adj,h.g2adj,h.g3adj)===melhorGame);
+  const hPG=hist.find(h=>[h.g1adj,h.g2adj,h.g3adj].includes(piorGame));
+  const hMM=hist.find(h=>h.media===melhorMedia);
+  const totalPts=hist.reduce((a,h)=>a+h.pts,0);
+  const bonusTotal=hist.filter(h=>h.bon>0).length;
+  const mediaGeral=medias.reduce((a,b)=>a+b,0)/medias.length;
+  const posicoes=hist.map(h=>h.pos).filter(p=>typeof p==='number');
+  const melhorPos=posicoes.length?Math.min(...posicoes):null;
+  const piorPos=posicoes.length?Math.max(...posicoes):null;
+  const hMP=hist.find(h=>h.pos===melhorPos);
+
+  document.getElementById('perfil-stats').innerHTML=`
+    <div class="perf-card"><div class="perf-label">Média geral</div><div class="perf-val">${mediaGeral.toFixed(1)}</div></div>
+    <div class="perf-card"><div class="perf-label">Melhor game</div><div class="perf-val" style="color:#219a52;">${melhorGame}</div><div class="perf-sub">${hMG?hMG.semana+' · '+fmtD(hMG.data):''}</div></div>
+    <div class="perf-card"><div class="perf-label">Pior game</div><div class="perf-val" style="color:#c0392b;">${piorGame}</div><div class="perf-sub">${hPG?hPG.semana+' · '+fmtD(hPG.data):''}</div></div>
+    <div class="perf-card"><div class="perf-label">Melhor média</div><div class="perf-val">${melhorMedia.toFixed(1)}</div><div class="perf-sub">${hMM?hMM.semana:''}</div></div>
+    <div class="perf-card"><div class="perf-label">Pior média</div><div class="perf-val">${piorMedia.toFixed(1)}</div></div>
+    <div class="perf-card"><div class="perf-label">🥇 Melhor coloc.</div><div class="perf-val" style="color:#219a52;">${melhorPos!==null?melhorPos+'º':'—'}</div><div class="perf-sub">${hMP?hMP.semana:''}</div></div>
+    <div class="perf-card"><div class="perf-label">📉 Pior coloc.</div><div class="perf-val" style="color:#c0392b;">${piorPos!==null?piorPos+'º':'—'}</div></div>
+    <div class="perf-card"><div class="perf-label">Total pontos</div><div class="perf-val">${totalPts}</div></div>
+    <div class="perf-card"><div class="perf-label">🏆 Melhor linha</div><div class="perf-val">${bonusTotal}x</div></div>
+    <div class="perf-card"><div class="perf-label">Semanas</div><div class="perf-val">${hist.length}/${totalSem}</div></div>`;
+
+  document.getElementById('perfil-hist').innerHTML=hist.map(h=>{
+    const myMaxAdj=Math.max(h.g1adj,h.g2adj,h.g3adj);
+    const isMG=myMaxAdj===melhorGame;
+    const posIcon=h.pos===1?'🥇':h.pos===2?'🥈':h.pos===3?'🥉':`${h.pos}º`;
+    const femNote=isFem(nome)?` <span style="font-size:9px;color:#ad1457;">(+${HCP()})</span>`:'';
+    return`<tr>
+      <td>${h.semana}</td><td style="color:#999;">${fmtD(h.data)}</td>
+      <td style="text-align:center;font-size:14px;">${posIcon}</td>
+      <td style="text-align:center;">${h.g1}${femNote}</td>
+      <td style="text-align:center;">${h.g2}${femNote}</td>
+      <td style="text-align:center;">${h.g3}${femNote}</td>
+      <td style="font-weight:700;text-align:center;">${h.media.toFixed(1)}</td>
+      <td style="text-align:center;font-weight:700;color:${isMG?'#219a52':'#1a1a1a'};">${myMaxAdj}${isMG?' 🏆':''}</td>
+      <td style="text-align:center;">${h.fp?'<span class="late-badge">fora</span>':'✅'}</td>
+      <td style="text-align:center;font-weight:700;">${h.pts}${h.bon?`<span style="color:#219a52;font-size:10px;"> +${BONUS()}</span>`:''}</td>
+    </tr>`;
+  }).join('');
+
+  if(chartPerfil){chartPerfil.destroy();chartPerfil=null;}
+  const ctx=document.getElementById('chart-perfil').getContext('2d');
+  chartPerfil=new Chart(ctx,{type:'line',
+    data:{labels:hist.map(h=>h.semana.replace('Semana','Sem.')),
+      datasets:[{label:'Média',data:hist.map(h=>+h.media.toFixed(1)),
+        borderColor:'#2980b9',backgroundColor:'#2980b920',borderWidth:2,
+        pointRadius:5,pointBackgroundColor:'#2980b9',fill:true,tension:.3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:false,ticks:{font:{size:11}}},x:{ticks:{font:{size:11}}}}}});
+  abrirModal();
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────

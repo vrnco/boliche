@@ -56,6 +56,8 @@ input[type=file]{height:auto;padding:6px 8px;}
 .av-ini{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
 .total-dia{background:#f0f7ff;border:1px solid #b3d4f5;border-radius:8px;padding:7px 12px;font-size:13px;margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;}
 .total-dia b{color:#1a5fa8;}
+.btn-warn{background:#e67e22;color:#fff;border-color:#e67e22;}
+.btn-warn:hover{background:#d35400;}
 .chip{display:inline-block;background:#f0f0f0;border-radius:20px;padding:2px 9px;font-size:11px;margin:2px;line-height:1.6;}
 .chip.best{background:#fff8e1;color:#7d4e00;border:1px solid #ffe082;font-weight:700;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;display:none;}
@@ -99,6 +101,7 @@ input[type=file]{height:auto;padding:6px 8px;}
   <button class="tab" onclick="tab('atletas')">👤 Atletas</button>
   <button class="tab" onclick="tab('torneio')">🏆 Torneio</button>
   <button class="tab" onclick="tab('ptsextra')">🎖️ Pts Extra</button>
+  <button class="tab" onclick="tab('semestres')">📆 Semestres</button>
   <button class="tab" onclick="tab('config')">⚙️ Config</button>
 </div>
 
@@ -245,6 +248,38 @@ input[type=file]{height:auto;padding:6px 8px;}
   </div>
 </div>
 
+<!-- SEMESTRES -->
+<div id="t-semestres" style="display:none;">
+
+  <!-- Semestre ativo -->
+  <div id="sem-ativo-card"></div>
+
+  <!-- Encerrar semestre -->
+  <div class="card" id="sem-encerrar-card">
+    <p class="sec" style="color:#c0392b;">⚠️ Encerrar semestre atual</p>
+    <p style="font-size:13px;color:#555;line-height:1.7;margin-bottom:12px;">
+      Ao encerrar, a classificação atual será salva permanentemente.<br>
+      Um novo semestre será criado automaticamente com os mesmos atletas e <strong>pontuação zerada</strong>.
+    </p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      <div><div style="font-size:11px;color:#aaa;margin-bottom:3px;">Nome do novo semestre</div>
+        <input type="text" id="sem-novo-nome" placeholder="Ex: 2º Semestre 2026" style="width:220px;"></div>
+      <div><div style="font-size:11px;color:#aaa;margin-bottom:3px;">Data de início</div>
+        <input type="date" id="sem-novo-data" style="width:150px;"></div>
+    </div>
+    <button class="btn btn-warn" onclick="encerrarSemestre()" style="background:#e67e22;color:#fff;border-color:#e67e22;">
+      🏁 Encerrar e iniciar novo semestre
+    </button>
+    <div id="sem-enc-msg" style="font-size:12px;margin-top:8px;"></div>
+  </div>
+
+  <!-- Histórico de semestres -->
+  <div style="margin-top:4px;">
+    <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:10px;">📜 Semestres anteriores</div>
+    <div id="sem-hist"></div>
+  </div>
+</div>
+
 <!-- CONFIG -->
 <div id="t-config" style="display:none;">
   <div class="card">
@@ -353,15 +388,17 @@ function getBonusWinners(adjMap){
 }
 
 async function carregarDados(){
-  let torneiosExtra=[];
-  [atletas,rodadas,scores,torneiosExtra]= await Promise.all([
+  let torneiosExtra=[], semestres=[];
+  [atletas,rodadas,scores,torneiosExtra,semestres]= await Promise.all([
     sbGet('atletas','order=nome&ativo=eq.true'),
     sbGet('rodadas','order=data'),
     sbGet('scores','order=rodada_id'),
     sbGet('torneios_extra','order=data'),
+    sbGet('semestres','order=ano,numero'),
   ]);
-  // Armazenar globalmente para uso no cálculo
   window._torneiosExtra = torneiosExtra||[];
+  window._semestres = semestres||[];
+  window._semAtivo = semestres.find(s=>!s.encerrado)||null;
   const cfgArr=await sbGet('configuracao','id=eq.1');
   if(cfgArr[0])cfg=cfgArr[0];
   document.getElementById('hcp-info').textContent=HCP();
@@ -480,8 +517,10 @@ async function salvar(){
   if(!Object.keys(sc).length){lm.className='err';lm.textContent='⚠ Nenhuma pontuação informada.';return;}
   lm.className='warn';lm.textContent='⏳ Salvando...';
   try{
-    // Criar rodada
-    const rod=await sbPost('rodadas',{semana:nm,data:dt});
+    // Criar rodada vinculada ao semestre ativo
+    const semAtivo=window._semAtivo;
+    if(!semAtivo){lm.className='err';lm.textContent='⚠ Nenhum semestre ativo. Acesse a aba Semestres.';return;}
+    const rod=await sbPost('rodadas',{semana:nm,data:dt,semestre_id:semAtivo.id});
     if(!rod||!rod[0]){lm.className='err';lm.textContent='❌ Erro ao criar rodada.';return;}
     const rodId=rod[0].id;
     // Salvar scores
@@ -526,8 +565,12 @@ function calcSemanaLocal(rodadaId){
 
 function rHistorico(){
   const el=document.getElementById('hist-list');
-  if(!rodadas.length){el.innerHTML='<div class="empty">📭 Nenhuma semana registrada.</div>';return;}
-  const sorted=[...rodadas].sort((a,b)=>b.data.localeCompare(a.data));
+  const semAtivo2=window._semAtivo;
+  const rodFilt=semAtivo2?rodadas.filter(r=>r.semestre_id===semAtivo2.id):rodadas;
+  if(!rodFilt.length){el.innerHTML=`<div class="card" style="background:#fff8e1;border-color:#ffe082;"><p style="font-size:13px;">📭 Nenhuma semana lançada em <strong>${semAtivo2?semAtivo2.nome:'semestre ativo'}</strong> ainda.</p></div>`;return;}
+  const semAtivo=window._semAtivo;
+  const rodFiltradas=semAtivo?rodadas.filter(r=>r.semestre_id===semAtivo.id):rodadas;
+  const sorted=[...rodFiltradas].sort((a,b)=>b.data.localeCompare(a.data));
   el.innerHTML=sorted.map(r=>{
     const pr=calcSemanaLocal(r.id);
     const sc=scores.filter(x=>x.rodada_id===r.id);
@@ -1048,12 +1091,13 @@ async function salvarConfig(){
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
 function tab(t){
-  ['lancar','historico','atletas','torneio','ptsextra','config'].forEach(id=>{document.getElementById('t-'+id).style.display=id===t?'':'none';});
-  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['lancar','historico','atletas','torneio','ptsextra','config'][i]===t);});
+  ['lancar','historico','atletas','torneio','ptsextra','semestres','config'].forEach(id=>{document.getElementById('t-'+id).style.display=id===t?'':'none';});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['lancar','historico','atletas','torneio','ptsextra','semestres','config'][i]===t);});
   if(t==='historico')rHistorico();
   else if(t==='atletas')rAtletas();
   else if(t==='torneio'){TRN.data=new Date().toISOString().slice(0,10);rTorneio();}
   else if(t==='ptsextra'){rPtsExtraSelects();rPtsExtraHist();document.getElementById('pte-data').value=new Date().toISOString().slice(0,10);}
+  else if(t==='semestres')rSemestres();
   else if(t==='config')rConfig();
 }
 
@@ -1300,6 +1344,173 @@ async function delPtsExtra(id){
   await sbDelete('torneios_extra','id=eq.'+id);
   await rPtsExtraHist();
   toast('Torneio extra excluído');
+}
+
+// ══════════════════════════════════════════════════════
+// SEMESTRES
+// ══════════════════════════════════════════════════════
+
+function calcRankAdmin(semId){
+  const pp=PP(), bon=BONUS();
+  const semRod = rodadas.filter(r=>r.semestre_id===semId);
+  const semSc  = scores.filter(s=>semRod.find(r=>r.id===s.rodada_id));
+  const semExt = (window._torneiosExtra||[]).filter(t=>t.semestre_id===semId);
+  const totalSem = semRod.length;
+  const s={};
+  atletas.forEach(a=>{s[a.nome]={sem:0,tm:0,mg:0,bc:0,pts:0,tp:0,total:totalSem};});
+
+  semRod.forEach(r=>{
+    const pr=calcSemanaLocal(r.id); // usa a função já existente
+    semSc.filter(x=>x.rodada_id===r.id).forEach(x=>{
+      const adj=gamesAdj(x.atleta_nome,x.g1,x.g2,x.g3);
+      if(adj.media<=0)return;
+      if(!s[x.atleta_nome])s[x.atleta_nome]={sem:0,tm:0,mg:0,bc:0,pts:0,tp:0,total:totalSem};
+      const re=pr[x.atleta_nome]||{pts:20,b:0};
+      s[x.atleta_nome].sem++;
+      s[x.atleta_nome].tm+=adj.media;
+      s[x.atleta_nome].mg=Math.max(s[x.atleta_nome].mg,Math.max(adj.g1,adj.g2,adj.g3));
+      if(re.b)s[x.atleta_nome].bc++;
+      s[x.atleta_nome].pts+=re.pts;
+      s[x.atleta_nome].tp+=(x.g1||0)+(x.g2||0)+(x.g3||0);
+    });
+  });
+  semExt.forEach(t=>{
+    if(t.primeiro&&s[t.primeiro])s[t.primeiro].pts+=200;
+    if(t.segundo&&s[t.segundo])  s[t.segundo].pts+=180;
+    if(t.terceiro&&s[t.terceiro])s[t.terceiro].pts+=160;
+  });
+  return atletas
+    .map(a=>({nome:a.nome,...s[a.nome],med:s[a.nome].sem>0?s[a.nome].tm/s[a.nome].sem:0}))
+    .sort((a,b)=>b.pts-a.pts||b.med-a.med);
+}
+
+function rSemestres(){
+  const sems = window._semestres||[];
+  const ativo = window._semAtivo;
+
+  // Card semestre ativo
+  const atvEl = document.getElementById('sem-ativo-card');
+  if(ativo){
+    const rank=calcRankAdmin(ativo.id);
+    const lider=rank.find(j=>j.pts>0);
+    atvEl.innerHTML=`<div class="card" style="border:2px solid #1a1a1a;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <div>
+          <strong style="font-size:16px;">📆 ${ativo.nome}</strong>
+          <span style="background:#fff8e1;color:#c9960c;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:8px;">● Em andamento</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;">
+        <span>📅 Início: <strong>${fmtD(ativo.data_inicio)}</strong></span>
+        <span>🎳 Semanas: <strong>${rodadas.filter(r=>r.semestre_id===ativo.id).length}</strong></span>
+        <span>🏆 Líder: <strong>${lider?lider.nome:'—'}</strong> ${lider?'('+lider.pts+' pts)':''}</span>
+      </div>
+    </div>`;
+    document.getElementById('sem-encerrar-card').style.display='';
+    // Sugerir nome do próximo semestre
+    const proximo = ativo.numero===1?'2º Semestre '+ativo.ano:'1º Semestre '+(ativo.ano+1);
+    document.getElementById('sem-novo-nome').value=proximo;
+    document.getElementById('sem-novo-data').value=new Date().toISOString().slice(0,10);
+  } else {
+    atvEl.innerHTML=`<div class="card" style="background:#e8f5e9;border-color:#a5d6a7;">
+      <p style="font-size:13px;color:#1a7a3c;">✓ Nenhum semestre ativo. Crie um novo abaixo.</p>
+    </div>`;
+    document.getElementById('sem-encerrar-card').style.display='none';
+  }
+
+  // Criar novo semestre (se não tiver ativo)
+  const semHist = document.getElementById('sem-hist');
+  const encerrados = sems.filter(s=>s.encerrado).sort((a,b)=>b.ano-a.ano||b.numero-a.numero);
+
+  if(!encerrados.length){
+    semHist.innerHTML='<div class="empty">Nenhum semestre encerrado ainda.</div>';
+    return;
+  }
+
+  semHist.innerHTML=encerrados.map(sem=>{
+    const rank=calcRankAdmin(sem.id);
+    const top3=rank.filter(j=>j.pts>0).slice(0,3);
+    const totalRod=rodadas.filter(r=>r.semestre_id===sem.id).length;
+    const podio=top3.map((j,i)=>{
+      const emojis=['🥇','🥈','🥉'];
+      return`<span style="display:inline-flex;align-items:center;gap:5px;background:#f5f5f5;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700;margin:2px;">
+        ${emojis[i]} ${j.nome} — ${j.pts}pts
+      </span>`;
+    }).join('');
+    const rows=rank.filter(j=>j.pts>0||j.sem>0).map((j,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:13px;">
+        <span style="width:24px;text-align:center;font-weight:700;color:#bbb;">${i+1}</span>
+        <span style="flex:1;font-weight:${i<3?700:400};">${j.nome}</span>
+        <span style="color:#888;font-size:11px;">${j.sem}/${totalRod}</span>
+        <span style="color:#555;font-weight:600;margin:0 8px;">${j.med.toFixed(1)}</span>
+        <span style="font-weight:700;">${j.pts}pts</span>
+      </div>`).join('');
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <strong style="font-size:15px;">${sem.nome}</strong>
+          <span style="background:#e8f5e9;color:#219a52;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:8px;">✓ Encerrado</span>
+          <div style="font-size:11px;color:#999;margin-top:3px;">${fmtD(sem.data_inicio)} → ${fmtD(sem.data_fim)} · ${totalRod} semanas</div>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">${podio}</div>
+      <details>
+        <summary style="cursor:pointer;font-size:12px;font-weight:700;color:#888;margin-bottom:8px;">📋 Ver classificação completa</summary>
+        <div style="margin-top:8px;">${rows}</div>
+      </details>
+    </div>`;
+  }).join('');
+}
+
+async function encerrarSemestre(){
+  const ativo = window._semAtivo;
+  const novoNome = document.getElementById('sem-novo-nome').value.trim();
+  const novaData = document.getElementById('sem-novo-data').value;
+  const msg = document.getElementById('sem-enc-msg');
+
+  if(!ativo){msg.className='err';msg.textContent='⚠ Nenhum semestre ativo encontrado.';return;}
+  if(!novoNome){msg.className='err';msg.textContent='⚠ Informe o nome do novo semestre.';return;}
+  if(!novaData){msg.className='err';msg.textContent='⚠ Informe a data de início do novo semestre.';return;}
+
+  if(!confirm(`Encerrar "${ativo.nome}" e iniciar "${novoNome}"?
+
+Esta ação não pode ser desfeita.`))return;
+
+  msg.className='warn';msg.textContent='⏳ Encerrando semestre...';
+
+  try{
+    // 1. Calcular classificação final
+    const rankFinal = calcRankAdmin(ativo.id);
+    const classSnap = rankFinal.filter(j=>j.pts>0||j.sem>0).map((j,i)=>({
+      pos:i+1, nome:j.nome, pts:j.pts, med:+j.med.toFixed(1), sem:j.sem, tp:j.tp
+    }));
+
+    // 2. Encerrar semestre atual
+    const hoje = new Date().toISOString().slice(0,10);
+    await sbPatch('semestres','id=eq.'+ativo.id,{
+      encerrado:true,
+      data_fim:hoje,
+      classificacao_final:classSnap
+    });
+
+    // 3. Criar novo semestre
+    const novoNum = ativo.numero===1?2:1;
+    const novoAno = ativo.numero===1?ativo.ano:ativo.ano+1;
+    const novoSem = await sbPost('semestres',{
+      nome:novoNome, ano:novoAno, numero:novoNum,
+      data_inicio:novaData, encerrado:false
+    });
+
+    if(!novoSem||!novoSem[0]){msg.className='err';msg.textContent='❌ Erro ao criar novo semestre.';return;}
+
+    msg.className='ok';msg.textContent=`✓ "${ativo.nome}" encerrado! "${novoNome}" iniciado.`;
+    toast('✓ Semestre encerrado com sucesso!');
+
+    // Recarregar tudo
+    await carregarDados();
+    rSemestres();
+
+  }catch(e){msg.className='err';msg.textContent='❌ Erro: '+e.message;console.error(e);}
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────
