@@ -67,6 +67,9 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
 .perf-val{font-size:18px;font-weight:700;}
 .perf-sub{font-size:10px;color:#999;margin-top:2px;}
 /* torneios */
+.sem-filtro{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #f0f0f0;}
+.sem-filtro-btn{height:30px;padding:0 12px;border:1px solid #ccc;border-radius:20px;font-size:12px;font-weight:600;background:#fff;color:#888;cursor:pointer;}
+.sem-filtro-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
 .trn-hist-card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px;}
 .trn-campeao{font-size:20px;font-weight:700;color:#c9960c;}
 /* btn */
@@ -114,7 +117,6 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
   <div class="tabs">
     <button class="tab active" onclick="tab('ranking')">🏆 Classificação</button>
     <button class="tab" onclick="tab('historico')">📅 Histórico</button>
-    <button class="tab" onclick="tab('torneios')">🎯 Torneios</button>
     <button class="tab" onclick="tab('campeonatos')">🎖️ Campeonatos</button>
   </div>
 
@@ -142,9 +144,6 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
   </div>
 
   <!-- TORNEIOS -->
-  <div id="t-torneios" style="display:none;">
-    <div id="torn-list"><div class="loading">⏳ Carregando...</div></div>
-  </div>
 
 </div>
 
@@ -175,6 +174,7 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14p
       </div>
       <button class="btn btn-sm" onclick="fecharPerfil()">✕ Fechar</button>
     </div>
+    <div id="perfil-sem-filtro" class="sem-filtro" style="display:none;"></div>
     <div id="perfil-stats" class="perf-grid"></div>
     <div class="card" style="margin-bottom:12px;">
       <p class="sec">Evolução da média por semana</p>
@@ -213,6 +213,9 @@ async function sbGet(path, params=''){
 let atletas=[], rodadas=[], scores=[], cfg={pontos_pos:{},bonus_linha:10,handicap_feminino:20};
 let torneiosData=[];
 let chartPerfil=null;
+let _perfilNomeAtivo='';
+let _perfilFiltroAtivo='ativo'; // 'ativo' | semId | 'ano'
+
 const CL=['#2980b9','#16a085','#e67e22','#8e44ad','#c0392b','#27ae60','#2c3e50','#d35400','#1abc9c','#7f8c8d','#2980b9','#16a085','#e67e22','#8e44ad','#c0392b','#27ae60','#2c3e50','#d35400','#1abc9c','#7f8c8d'];
 
 function ac(n){let h=0;for(let c of n)h=(h*31+c.charCodeAt(0))%CL.length;return CL[h];}
@@ -447,40 +450,132 @@ function rTorneios(){
 }
 
 // ── PERFIL ────────────────────────────────────────────────────────────────
-function abrirPerfil(nome){
-  const at=atletas.find(a=>a.nome===nome);
-  const c=ac(nome);
-  const avWrap=at?.foto_url
+// ── PERFIL COM SELETOR DE SEMESTRE ───────────────────────────────────────
+function abrirPerfil(nome, filtro){
+  _perfilNomeAtivo = nome;
+  _perfilFiltroAtivo = filtro || 'ativo';
+
+  const at = atletas.find(a=>a.nome===nome);
+  const c = ac(nome);
+  const avWrap = at?.foto_url
     ?`<img src="${at.foto_url}" class="av-lg">`
     :`<div class="av-lg-ini" style="background:${c}20;color:${c};">${ini(nome)}</div>`;
-  document.getElementById('perfil-av-wrap').innerHTML=avWrap;
-  document.getElementById('perfil-nome').innerHTML=nome+(at?.feminino?` <span class="fem-badge">♀ +${HCP()} handicap</span>`:'');
-  const totalSem=rodadas.length;
+  document.getElementById('perfil-av-wrap').innerHTML = avWrap;
+  document.getElementById('perfil-nome').innerHTML =
+    nome + (at?.feminino?` <span class="fem-badge">♀ +${HCP()} handicap</span>`:'');
 
+  // Montar seletor de semestres
+  const sems = window._semestres||[];
+  const semAtivo = window._semAtivo;
+  const anoAtual = semAtivo ? semAtivo.ano : new Date().getFullYear();
+  const filtroEl = document.getElementById('perfil-sem-filtro');
+
+  if(sems.length > 0){
+    filtroEl.style.display = 'flex';
+    const btns = [];
+    // Botão semestre ativo
+    if(semAtivo){
+      btns.push({id:'ativo', label:'📆 '+semAtivo.nome+' (atual)'});
+    }
+    // Botões semestres encerrados (mesmo ano)
+    sems.filter(s=>s.encerrado && s.ano===anoAtual)
+      .sort((a,b)=>a.numero-b.numero)
+      .forEach(s=>btns.push({id:s.id, label:s.nome}));
+    // Botão ano completo (se tiver mais de 1 semestre)
+    if(btns.length > 1){
+      btns.push({id:'ano', label:'📊 Ano completo '+anoAtual});
+    }
+    filtroEl.innerHTML = btns.map(b=>`
+      <button class="sem-filtro-btn ${_perfilFiltroAtivo===b.id?'active':''}"
+        onclick="abrirPerfil('${nome}','${b.id}')">${b.label}</button>`
+    ).join('');
+  } else {
+    filtroEl.style.display = 'none';
+  }
+
+  // Montar histórico baseado no filtro
+  const hist = buildHistPerfil(nome, _perfilFiltroAtivo);
+  const totalSem = getTotalSemFiltro(_perfilFiltroAtivo);
+
+  const atrasado = totalSem>0 && hist.length<totalSem;
+  const filtroNome = getFiltroNome(_perfilFiltroAtivo);
+  document.getElementById('perfil-sub').innerHTML =
+    `<span class="${atrasado?'atrasado':'emdia'}">${hist.length}/${totalSem} semanas</span>` +
+    ` — ${filtroNome}` +
+    (atrasado?` <span style="color:#c0392b;font-size:11px;">(${totalSem-hist.length} em atraso)</span>`:'');
+
+  if(!hist.length){
+    document.getElementById('perfil-stats').innerHTML='<div class="empty">Nenhum dado para este período.</div>';
+    document.getElementById('perfil-hist').innerHTML='';
+    abrirModal();return;
+  }
+
+  renderPerfilStats(nome, hist, totalSem);
+  abrirModal();
+}
+
+function getFiltroNome(filtro){
+  if(filtro==='ativo') return (window._semAtivo?.nome)||'Semestre atual';
+  if(filtro==='ano'){
+    const semAtivo=window._semAtivo;
+    return 'Ano completo '+(semAtivo?semAtivo.ano:new Date().getFullYear());
+  }
+  const sem=(window._semestres||[]).find(s=>s.id===filtro);
+  return sem?sem.nome:'—';
+}
+
+function getTotalSemFiltro(filtro){
+  if(filtro==='ativo'){
+    const sa=window._semAtivo;
+    return sa?rodadas.filter(r=>r.semestre_id===sa.id).length:rodadas.length;
+  }
+  if(filtro==='ano'){
+    const semAtivo=window._semAtivo;
+    const ano=semAtivo?semAtivo.ano:new Date().getFullYear();
+    const semIds=(window._semestres||[]).filter(s=>s.ano===ano).map(s=>s.id);
+    return rodadas.filter(r=>semIds.includes(r.semestre_id)).length;
+  }
+  return rodadas.filter(r=>r.semestre_id===filtro).length;
+}
+
+function buildHistPerfil(nome, filtro){
+  // Determinar quais rodadas incluir
+  let rodFiltradas;
+  if(filtro==='ativo'){
+    const sa=window._semAtivo;
+    rodFiltradas = sa ? rodadas.filter(r=>r.semestre_id===sa.id) : rodadas;
+  } else if(filtro==='ano'){
+    const semAtivo=window._semAtivo;
+    const ano=semAtivo?semAtivo.ano:new Date().getFullYear();
+    const semIds=(window._semestres||[]).filter(s=>s.ano===ano).map(s=>s.id);
+    rodFiltradas=rodadas.filter(r=>semIds.includes(r.semestre_id));
+  } else {
+    rodFiltradas=rodadas.filter(r=>r.semestre_id===filtro);
+  }
+
+  // Para "ano completo", precisamos calcular pontos por semestre separado
+  // Para cada rodada, calcular pontuação dentro do contexto do seu semestre
   const hist=[];
-  rodadas.forEach(r=>{
+  rodFiltradas.sort((a,b)=>a.data.localeCompare(b.data)).forEach(r=>{
     const sc=scores.find(x=>x.rodada_id===r.id&&x.atleta_nome===nome);
     if(!sc)return;
     const adj=gamesAdj(nome,sc.g1,sc.g2,sc.g3);
     if(adj.media<=0)return;
     const pr=calcSemana(r.id);
     const re=pr[nome]||{pts:20,b:0,pos:'-'};
-    hist.push({semana:r.semana,data:r.data,fp:sc.fora_prazo,pts:re.pts,bon:re.b,pos:re.pos,
-      g1:sc.g1||0,g2:sc.g2||0,g3:sc.g3||0,
-      g1adj:adj.g1,g2adj:adj.g2,g3adj:adj.g3,media:adj.media});
+    const sem=(window._semestres||[]).find(s=>s.id===r.semestre_id);
+    hist.push({
+      semana:r.semana, data:r.data, fp:sc.fora_prazo,
+      pts:re.pts, bon:re.b, pos:re.pos,
+      semNome:sem?sem.nome:'',
+      g1:sc.g1||0, g2:sc.g2||0, g3:sc.g3||0,
+      g1adj:adj.g1, g2adj:adj.g2, g3adj:adj.g3, media:adj.media
+    });
   });
+  return hist;
+}
 
-  const atrasado=totalSem>0&&hist.length<totalSem;
-  document.getElementById('perfil-sub').innerHTML=
-    `<span class="${atrasado?'atrasado':'emdia'}">${hist.length}/${totalSem} semanas jogadas</span>`+
-    (atrasado?` <span style="color:#c0392b;font-size:11px;">(${totalSem-hist.length} em atraso)</span>`:'');
-
-  if(!hist.length){
-    document.getElementById('perfil-stats').innerHTML='<div class="empty">Nenhum dado.</div>';
-    document.getElementById('perfil-hist').innerHTML='';
-    abrirModal();return;
-  }
-
+function renderPerfilStats(nome, hist, totalSem){
   const allGames=hist.flatMap(h=>[h.g1adj,h.g2adj,h.g3adj].filter(v=>v>0));
   const melhorGame=Math.max(...allGames), piorGame=Math.min(...allGames);
   const medias=hist.map(h=>h.media);
@@ -495,31 +590,39 @@ function abrirPerfil(nome){
   const melhorPos=posicoes.length?Math.min(...posicoes):null;
   const piorPos=posicoes.length?Math.max(...posicoes):null;
   const hMP=hist.find(h=>h.pos===melhorPos);
+  const isModoAno=_perfilFiltroAtivo==='ano';
 
   document.getElementById('perfil-stats').innerHTML=`
     <div class="perf-card"><div class="perf-label">Média geral</div><div class="perf-val">${mediaGeral.toFixed(1)}</div></div>
-    <div class="perf-card"><div class="perf-label">Melhor game</div><div class="perf-val" style="color:#219a52;">${melhorGame}</div><div class="perf-sub">${hMG?hMG.semana+' · '+fmtD(hMG.data):''}</div></div>
-    <div class="perf-card"><div class="perf-label">Pior game</div><div class="perf-val" style="color:#c0392b;">${piorGame}</div><div class="perf-sub">${hPG?hPG.semana+' · '+fmtD(hPG.data):''}</div></div>
-    <div class="perf-card"><div class="perf-label">Melhor média</div><div class="perf-val">${melhorMedia.toFixed(1)}</div><div class="perf-sub">${hMM?hMM.semana:''}</div></div>
+    <div class="perf-card"><div class="perf-label">Melhor game</div><div class="perf-val" style="color:#219a52;">${melhorGame}</div>
+      <div class="perf-sub">${hMG?(isModoAno?hMG.semNome+' · ':'')+hMG.semana+' · '+fmtD(hMG.data):''}</div></div>
+    <div class="perf-card"><div class="perf-label">Pior game</div><div class="perf-val" style="color:#c0392b;">${piorGame}</div>
+      <div class="perf-sub">${hPG?(isModoAno?hPG.semNome+' · ':'')+hPG.semana:''}</div></div>
+    <div class="perf-card"><div class="perf-label">Melhor média</div><div class="perf-val">${melhorMedia.toFixed(1)}</div>
+      <div class="perf-sub">${hMM?hMM.semana:''}</div></div>
     <div class="perf-card"><div class="perf-label">Pior média</div><div class="perf-val">${piorMedia.toFixed(1)}</div></div>
-    <div class="perf-card"><div class="perf-label">🥇 Melhor coloc.</div><div class="perf-val" style="color:#219a52;">${melhorPos!==null?melhorPos+'º':'—'}</div><div class="perf-sub">${hMP?hMP.semana:''}</div></div>
+    <div class="perf-card"><div class="perf-label">🥇 Melhor coloc.</div><div class="perf-val" style="color:#219a52;">${melhorPos!==null?melhorPos+'º':'—'}</div>
+      <div class="perf-sub">${hMP?hMP.semana:''}</div></div>
     <div class="perf-card"><div class="perf-label">📉 Pior coloc.</div><div class="perf-val" style="color:#c0392b;">${piorPos!==null?piorPos+'º':'—'}</div></div>
     <div class="perf-card"><div class="perf-label">Total pontos</div><div class="perf-val">${totalPts}</div></div>
     <div class="perf-card"><div class="perf-label">🏆 Melhor linha</div><div class="perf-val">${bonusTotal}x</div></div>
     <div class="perf-card"><div class="perf-label">Semanas</div><div class="perf-val">${hist.length}/${totalSem}</div></div>`;
 
+  const femNote=isFem(nome)?` <span style="font-size:9px;color:#ad1457;">(+${HCP()})</span>`:'';
   document.getElementById('perfil-hist').innerHTML=hist.map(h=>{
-    const myMaxAdj=Math.max(h.g1adj,h.g2adj,h.g3adj); // ajustado (para ranking)
+    const myMaxAdj=Math.max(h.g1adj,h.g2adj,h.g3adj);
+    const isMG=myMaxAdj===melhorGame;
     const posIcon=h.pos===1?'🥇':h.pos===2?'🥈':h.pos===3?'🥉':`${h.pos}º`;
-    const femNote=isFem(nome)?' <span style="font-size:9px;color:#ad1457;">(+'+HCP()+')</span>':'';
+    const semLabel=isModoAno?`<span style="font-size:10px;color:#2980b9;display:block;">${h.semNome}</span>`:'';
     return`<tr>
-      <td>${h.semana}</td><td style="color:#999;">${fmtD(h.data)}</td>
-      <td style="text-align:center;font-size:15px;">${posIcon}</td>
+      <td>${semLabel}${h.semana}</td>
+      <td style="color:#999;">${fmtD(h.data)}</td>
+      <td style="text-align:center;font-size:14px;">${posIcon}</td>
       <td style="text-align:center;">${h.g1}${femNote}</td>
       <td style="text-align:center;">${h.g2}${femNote}</td>
       <td style="text-align:center;">${h.g3}${femNote}</td>
       <td style="font-weight:700;text-align:center;">${h.media.toFixed(1)}</td>
-      <td style="text-align:center;font-weight:700;color:${myMaxAdj===melhorGame?'#219a52':'#1a1a1a'};">${myMaxAdj}${myMaxAdj===melhorGame?' 🏆':''}</td>
+      <td style="text-align:center;font-weight:700;color:${isMG?'#219a52':'#1a1a1a'};">${myMaxAdj}${isMG?' 🏆':''}</td>
       <td style="text-align:center;">${h.fp?'<span class="late-badge">fora</span>':'✅'}</td>
       <td style="text-align:center;font-weight:700;">${h.pts}${h.bon?`<span style="color:#219a52;font-size:10px;"> +${BONUS()}</span>`:''}</td>
     </tr>`;
@@ -528,13 +631,14 @@ function abrirPerfil(nome){
   if(chartPerfil){chartPerfil.destroy();chartPerfil=null;}
   const ctx=document.getElementById('chart-perfil').getContext('2d');
   chartPerfil=new Chart(ctx,{type:'line',
-    data:{labels:hist.map(h=>h.semana.replace('Semana','Sem.')),
+    data:{
+      labels:hist.map(h=>isModoAno?(h.semNome.replace('Semestre','Sem.')+' · '+h.semana.replace('Semana','Sem.')):h.semana.replace('Semana','Sem.')),
       datasets:[{label:'Média',data:hist.map(h=>+h.media.toFixed(1)),
         borderColor:'#2980b9',backgroundColor:'#2980b920',borderWidth:2,
-        pointRadius:5,pointBackgroundColor:'#2980b9',fill:true,tension:.3}]},
+        pointRadius:5,pointBackgroundColor:'#2980b9',fill:true,tension:.3}]
+    },
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:false,ticks:{font:{size:11}}},x:{ticks:{font:{size:11}}}}}});
-  abrirModal();
+      scales:{y:{beginAtZero:false,ticks:{font:{size:11}}},x:{ticks:{font:{size:10},maxRotation:45}}}}});
 }
 
 function abrirModal(){document.getElementById('modal-perfil').classList.add('open');document.body.style.overflow='hidden';}
@@ -569,10 +673,9 @@ async function fazerLogin(){
 
 // ── NAVEGAÇÃO ─────────────────────────────────────────────────────────────
 function tab(t){
-  ['ranking','historico','torneios','campeonatos'].forEach(id=>{document.getElementById('t-'+id).style.display=id===t?'':'none';});
-  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['ranking','historico','torneios','campeonatos'][i]===t);});
+  ['ranking','historico','campeonatos'].forEach(id=>{document.getElementById('t-'+id).style.display=id===t?'':'none';});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['ranking','historico','campeonatos'][i]===t);});
   if(t==='historico')rHistorico();
-  else if(t==='torneios')rTorneios();
   else if(t==='campeonatos')rCampeonatos();
 }
 
