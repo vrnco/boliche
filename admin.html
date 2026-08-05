@@ -422,7 +422,8 @@ async function carregarDados(){
   rAtletas();
   rConfig();
   atualizarTotalDia('p','f');
-  const n=rodadas.length+1;
+  const rodSemAtivo=(window._semAtivo?rodadas.filter(r=>r.semestre_id===window._semAtivo.id):rodadas);
+  const n=rodSemAtivo.length+1;
   if(!document.getElementById('sn').value)document.getElementById('sn').value='Semana '+n;
 }
 
@@ -545,7 +546,8 @@ async function salvar(){
     await sbPost('scores',scArr);
     lm.className='ok';lm.textContent=`✓ "${nm}" salva! ${Object.keys(sc).length} atleta(s).`;
     await carregarDados();
-    document.getElementById('sn').value='Semana '+(rodadas.length+1);
+    const rodAtSalvar=window._semAtivo?rodadas.filter(r=>r.semestre_id===window._semAtivo.id):rodadas;
+    document.getElementById('sn').value='Semana '+(rodAtSalvar.length+1);
   }catch(e){lm.className='err';lm.textContent='❌ Erro ao salvar: '+e.message;}
 }
 
@@ -555,7 +557,8 @@ function limpar(){
     ['tot','md','mx'].forEach(x=>{const el=document.getElementById(p+x+i);if(el)el.textContent='—';});
   });});
   document.getElementById('lm').textContent='';
-  document.getElementById('sn').value='Semana '+(rodadas.length+1);
+  const rodAtLimpar=window._semAtivo?rodadas.filter(r=>r.semestre_id===window._semAtivo.id):rodadas;
+  document.getElementById('sn').value='Semana '+(rodAtLimpar.length+1);
   atualizarTotalDia('p','f');
 }
 
@@ -1232,7 +1235,8 @@ function importarSemana(dataStr){
 
   // Preencher identificação
   // Descobrir número da semana (rodadas.length + 1 ou pela data)
-  const semNum = rodadas.length + 1;
+  const rodAtExcel=window._semAtivo?rodadas.filter(r=>r.semestre_id===window._semAtivo.id):rodadas;
+  const semNum = rodAtExcel.length + 1;
   const snEl = document.getElementById('sn');
   const sdEl = document.getElementById('sd');
   if(snEl) snEl.value = 'Semana ' + semNum;
