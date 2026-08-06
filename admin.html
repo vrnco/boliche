@@ -108,6 +108,17 @@ input[type=file]{height:auto;padding:6px 8px;}
 <!-- LANÇAR -->
 <div id="t-lancar">
 
+  <!-- SELETOR DE SEMESTRE DE TRABALHO -->
+  <div class="card" style="background:#fff8e1;border-color:#ffe082;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:700;">📆 Lançando em:</span>
+      <select id="sem-trabalho" style="height:34px;font-size:13px;min-width:220px;" onchange="setSemTrabalho(this.value)">
+        <option value="">Carregando...</option>
+      </select>
+      <span id="sem-trabalho-badge" style="font-size:11px;color:#888;"></span>
+    </div>
+  </div>
+
   <!-- IMPORTAR EXCEL -->
   <div class="card" style="border:2px dashed #b3d4f5;background:#f0f7ff;">
     <p class="sec" style="color:#1a5fa8;">📊 Importar Excel (opcional)</p>
@@ -174,7 +185,18 @@ input[type=file]{height:auto;padding:6px 8px;}
 </div>
 
 <!-- HISTÓRICO -->
-<div id="t-historico" style="display:none;"><div id="hist-list"></div></div>
+<div id="t-historico" style="display:none;">
+  <div class="card" style="background:#f0f7ff;border-color:#b3d4f5;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:700;">📅 Visualizando:</span>
+      <select id="sem-hist-filtro" style="height:34px;font-size:13px;min-width:220px;" onchange="rHistorico()">
+        <option value="ativo">Semestre ativo</option>
+        <option value="todos">Todos os semestres</option>
+      </select>
+    </div>
+  </div>
+  <div id="hist-list"></div>
+</div>
 
 <!-- ATLETAS -->
 <div id="t-atletas" style="display:none;">
@@ -413,6 +435,9 @@ async function carregarDados(){
   window._torneiosExtra = torneiosExtra||[];
   window._semestres = semestres||[];
   window._semAtivo = semestres.find(s=>!s.encerrado)||null;
+  // Se o semestre de trabalho ainda não foi definido, usar o ativo
+  if(!window._semTrabalho) window._semTrabalho = window._semAtivo || (semestres.length?semestres[semestres.length-1]:null);
+  rSemTrabalhoSelect();
   const cfgArr=await sbGet('configuracao','id=eq.1');
   if(cfgArr[0])cfg=cfgArr[0];
   document.getElementById('hcp-info').textContent=HCP();
@@ -422,7 +447,8 @@ async function carregarDados(){
   rAtletas();
   rConfig();
   atualizarTotalDia('p','f');
-  const rodSemAtivo=(window._semAtivo?rodadas.filter(r=>r.semestre_id===window._semAtivo.id):rodadas);
+  const semParaNum=window._semTrabalho||window._semAtivo;
+  const rodSemAtivo=(semParaNum?rodadas.filter(r=>r.semestre_id===semParaNum.id):rodadas);
   const n=rodSemAtivo.length+1;
   if(!document.getElementById('sn').value)document.getElementById('sn').value='Semana '+n;
 }
@@ -532,10 +558,10 @@ async function salvar(){
   if(!Object.keys(sc).length){lm.className='err';lm.textContent='⚠ Nenhuma pontuação informada.';return;}
   lm.className='warn';lm.textContent='⏳ Salvando...';
   try{
-    // Criar rodada vinculada ao semestre ativo
-    const semAtivo=window._semAtivo;
-    if(!semAtivo){lm.className='err';lm.textContent='⚠ Nenhum semestre ativo. Acesse a aba Semestres.';return;}
-    const rod=await sbPost('rodadas',{semana:nm,data:dt,semestre_id:semAtivo.id});
+    // Criar rodada vinculada ao semestre de trabalho selecionado
+    const semTrab=window._semTrabalho;
+    if(!semTrab){lm.className='err';lm.textContent='⚠ Selecione um semestre acima.';return;}
+    const rod=await sbPost('rodadas',{semana:nm,data:dt,semestre_id:semTrab.id});
     if(!rod||!rod[0]){lm.className='err';lm.textContent='❌ Erro ao criar rodada.';return;}
     const rodId=rod[0].id;
     // Salvar scores
@@ -546,8 +572,9 @@ async function salvar(){
     await sbPost('scores',scArr);
     lm.className='ok';lm.textContent=`✓ "${nm}" salva! ${Object.keys(sc).length} atleta(s).`;
     await carregarDados();
-    const rodAtSalvar=window._semAtivo?rodadas.filter(r=>r.semestre_id===window._semAtivo.id):rodadas;
+    const rodAtSalvar=window._semTrabalho?rodadas.filter(r=>r.semestre_id===window._semTrabalho.id):rodadas;
     document.getElementById('sn').value='Semana '+(rodAtSalvar.length+1);
+    atualizarBadgeSemTrabalho();
   }catch(e){lm.className='err';lm.textContent='❌ Erro ao salvar: '+e.message;}
 }
 
@@ -557,7 +584,7 @@ function limpar(){
     ['tot','md','mx'].forEach(x=>{const el=document.getElementById(p+x+i);if(el)el.textContent='—';});
   });});
   document.getElementById('lm').textContent='';
-  const rodAtLimpar=window._semAtivo?rodadas.filter(r=>r.semestre_id===window._semAtivo.id):rodadas;
+  const rodAtLimpar=window._semTrabalho?rodadas.filter(r=>r.semestre_id===window._semTrabalho.id):rodadas;
   document.getElementById('sn').value='Semana '+(rodAtLimpar.length+1);
   atualizarTotalDia('p','f');
 }
@@ -582,11 +609,19 @@ function calcSemanaLocal(rodadaId){
 
 function rHistorico(){
   const el=document.getElementById('hist-list');
-  const semAtivo2=window._semAtivo;
-  const rodFilt=semAtivo2?rodadas.filter(r=>r.semestre_id===semAtivo2.id):rodadas;
-  if(!rodFilt.length){el.innerHTML=`<div class="card" style="background:#fff8e1;border-color:#ffe082;"><p style="font-size:13px;">📭 Nenhuma semana lançada em <strong>${semAtivo2?semAtivo2.nome:'semestre ativo'}</strong> ainda.</p></div>`;return;}
-  const semAtivo=window._semAtivo;
-  const rodFiltradas=semAtivo?rodadas.filter(r=>r.semestre_id===semAtivo.id):rodadas;
+  // Filtrar pelo select do histórico
+  const hFiltroVal=document.getElementById('sem-hist-filtro')?.value||'todos';
+  let rodFiltradas;
+  if(hFiltroVal==='todos'){
+    rodFiltradas=rodadas;
+  } else {
+    rodFiltradas=rodadas.filter(r=>r.semestre_id===hFiltroVal);
+  }
+  if(!rodFiltradas.length){
+    const semNomeF=(window._semestres||[]).find(s=>s.id===hFiltroVal)?.nome||'período';
+    el.innerHTML=`<div class="card" style="background:#fff8e1;border-color:#ffe082;"><p style="font-size:13px;">📭 Nenhuma semana lançada em <strong>${hFiltroVal==='todos'?'nenhum semestre':semNomeF}</strong> ainda.</p></div>`;
+    return;
+  }
   const sorted=[...rodFiltradas].sort((a,b)=>b.data.localeCompare(a.data));
   el.innerHTML=sorted.map(r=>{
     const pr=calcSemanaLocal(r.id);
@@ -1114,7 +1149,8 @@ function tab(t){
   else if(t==='atletas')rAtletas();
   else if(t==='torneio'){TRN.data=new Date().toISOString().slice(0,10);rTorneio();}
   else if(t==='ptsextra'){rPtsExtraSelects();rPtsExtraHist();document.getElementById('pte-data').value=new Date().toISOString().slice(0,10);}
-  else if(t==='semestres')rSemestres();
+  else if(t==='semestres'){rSemestres();rSemTrabalhoSelect();}
+  // Popular filtro do histórico quando abre a aba
   else if(t==='config')rConfig();
 }
 
@@ -1529,6 +1565,67 @@ Esta ação não pode ser desfeita.`))return;
     rSemestres();
 
   }catch(e){msg.className='err';msg.textContent='❌ Erro: '+e.message;console.error(e);}
+}
+
+// ══════════════════════════════════════════════════════
+// SELETOR DE SEMESTRE DE TRABALHO
+// ══════════════════════════════════════════════════════
+
+// Semestre selecionado para lançar/editar (pode ser diferente do ativo)
+window._semTrabalho = null;
+
+function rSemTrabalhoSelect(){
+  const sems = window._semestres||[];
+  const sel = document.getElementById('sem-trabalho');
+  if(!sel) return;
+
+  sel.innerHTML = sems.map(s=>`
+    <option value="${s.id}" ${(!window._semTrabalho&&!s.encerrado)||window._semTrabalho?.id===s.id?'selected':''}>
+      ${s.nome}${s.encerrado?' (encerrado)':' (ativo)'}
+    </option>`).join('');
+
+  // Também popular o filtro do histórico
+  const hFil = document.getElementById('sem-hist-filtro');
+  if(hFil){
+    hFil.innerHTML = `<option value="todos">Todos os semestres</option>` +
+      sems.map(s=>`<option value="${s.id}">${s.nome}${s.encerrado?' (encerrado)':' (ativo)'}</option>`).join('');
+  }
+
+  // Definir semestre de trabalho padrão = ativo
+  if(!window._semTrabalho){
+    const ativo = sems.find(s=>!s.encerrado);
+    window._semTrabalho = ativo||sems[sems.length-1]||null;
+    if(sel && window._semTrabalho) sel.value = window._semTrabalho.id;
+  }
+
+  atualizarBadgeSemTrabalho();
+}
+
+function setSemTrabalho(semId){
+  const sems = window._semestres||[];
+  window._semTrabalho = sems.find(s=>s.id===semId)||null;
+  atualizarBadgeSemTrabalho();
+  // Atualizar número da semana
+  const rodSem = rodadas.filter(r=>r.semestre_id===semId);
+  const snEl = document.getElementById('sn');
+  if(snEl) snEl.value = 'Semana ' + (rodSem.length+1);
+}
+
+function atualizarBadgeSemTrabalho(){
+  const badge = document.getElementById('sem-trabalho-badge');
+  if(!badge) return;
+  const sem = window._semTrabalho;
+  if(!sem){ badge.textContent=''; return; }
+  const rodCount = rodadas.filter(r=>r.semestre_id===sem.id).length;
+  if(sem.encerrado){
+    badge.innerHTML = `<span style="background:#fff3cd;color:#7d4e00;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;">⚠️ Semestre encerrado — edições serão salvas neste semestre</span> · ${rodCount} semanas`;
+  } else {
+    badge.innerHTML = `<span style="background:#e8f5e9;color:#219a52;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;">✓ Ativo</span> · ${rodCount} semanas`;
+  }
+}
+
+function getSemTrabalhoId(){
+  return window._semTrabalho?.id || window._semAtivo?.id || null;
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────
